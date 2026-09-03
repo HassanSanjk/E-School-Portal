@@ -1,0 +1,783 @@
+diff --git a/.env.example b/.env.example
+new file mode 100644
+index 0000000..e661bf1
+--- /dev/null
++++ b/.env.example
+@@ -0,0 +1,8 @@
++# Copy this file to .env (which is gitignored) and fill in real values from
++# the Supabase project dashboard: Project Settings -> API Keys -> use the
++# "Publishable key" (sb_publishable_...), not the legacy anon key -
++# Supabase is retiring the legacy anon/service_role key format end of 2026.
++# Never commit .env itself - see AGENTS.md.
++
++VITE_SUPABASE_URL=https://your-project-ref.supabase.co
++VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_your-key-here
+diff --git a/package-lock.json b/package-lock.json
+index 9fa82fb..99d8838 100644
+--- a/package-lock.json
++++ b/package-lock.json
+@@ -10,11 +10,14 @@
+       "dependencies": {
+         "@base-ui/react": "^1.7.0",
+         "@fontsource-variable/geist": "^5.3.0",
+-        "@supabase/ssr": "^0.12.5",
+         "@supabase/supabase-js": "^2.112.4",
+         "@tailwindcss/vite": "^4.3.3",
++        "@tanstack/query-async-storage-persister": "^5.102.8",
++        "@tanstack/react-query": "^5.102.8",
++        "@tanstack/react-query-persist-client": "^5.102.8",
+         "class-variance-authority": "^0.7.1",
+         "clsx": "^2.1.1",
++        "idb-keyval": "^6.3.0",
+         "lucide-react": "^1.34.0",
+         "react": "^19.2.8",
+         "react-dom": "^19.2.8",
+@@ -2050,9 +2053,6 @@
+         "x64"
+       ],
+       "dev": true,
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -2233,9 +2233,6 @@
+         "arm64"
+       ],
+       "dev": true,
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -2253,9 +2250,6 @@
+         "arm64"
+       ],
+       "dev": true,
+-      "libc": [
+-        "musl"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -2273,9 +2267,6 @@
+         "ppc64"
+       ],
+       "dev": true,
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -2293,9 +2284,6 @@
+         "riscv64"
+       ],
+       "dev": true,
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -2313,9 +2301,6 @@
+         "riscv64"
+       ],
+       "dev": true,
+-      "libc": [
+-        "musl"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -2333,9 +2318,6 @@
+         "s390x"
+       ],
+       "dev": true,
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -2353,9 +2335,6 @@
+         "x64"
+       ],
+       "dev": true,
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -2373,9 +2352,6 @@
+         "x64"
+       ],
+       "dev": true,
+-      "libc": [
+-        "musl"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -2556,9 +2532,6 @@
+       "cpu": [
+         "arm64"
+       ],
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -2575,9 +2548,6 @@
+       "cpu": [
+         "arm64"
+       ],
+-      "libc": [
+-        "musl"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -2594,9 +2564,6 @@
+       "cpu": [
+         "ppc64"
+       ],
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -2613,9 +2580,6 @@
+       "cpu": [
+         "s390x"
+       ],
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -2632,9 +2596,6 @@
+       "cpu": [
+         "x64"
+       ],
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -2651,9 +2612,6 @@
+       "cpu": [
+         "x64"
+       ],
+-      "libc": [
+-        "musl"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -2929,9 +2887,6 @@
+         "arm"
+       ],
+       "dev": true,
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -2946,9 +2901,6 @@
+         "arm"
+       ],
+       "dev": true,
+-      "libc": [
+-        "musl"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -2963,9 +2915,6 @@
+         "arm64"
+       ],
+       "dev": true,
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -2980,9 +2929,6 @@
+         "arm64"
+       ],
+       "dev": true,
+-      "libc": [
+-        "musl"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -2997,9 +2943,6 @@
+         "loong64"
+       ],
+       "dev": true,
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -3014,9 +2957,6 @@
+         "loong64"
+       ],
+       "dev": true,
+-      "libc": [
+-        "musl"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -3031,9 +2971,6 @@
+         "ppc64"
+       ],
+       "dev": true,
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -3048,9 +2985,6 @@
+         "ppc64"
+       ],
+       "dev": true,
+-      "libc": [
+-        "musl"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -3065,9 +2999,6 @@
+         "riscv64"
+       ],
+       "dev": true,
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -3082,9 +3013,6 @@
+         "riscv64"
+       ],
+       "dev": true,
+-      "libc": [
+-        "musl"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -3099,9 +3027,6 @@
+         "s390x"
+       ],
+       "dev": true,
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -3116,9 +3041,6 @@
+         "x64"
+       ],
+       "dev": true,
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -3133,9 +3055,6 @@
+         "x64"
+       ],
+       "dev": true,
+-      "libc": [
+-        "musl"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -3299,31 +3218,6 @@
+         "node": ">=22.0.0"
+       }
+     },
+-    "node_modules/@supabase/ssr": {
+-      "version": "0.12.5",
+-      "resolved": "https://registry.npmjs.org/@supabase/ssr/-/ssr-0.12.5.tgz",
+-      "integrity": "sha512-0GllaAtHe7FHs6tlSg1CwkFw0a7aai1Shs9rEqSs/HaVkJzPk35C9r0Z8WUtKJ3eY6G/Y5y47YvCro3LynrAJg==",
+-      "license": "MIT",
+-      "dependencies": {
+-        "cookie": "^1.0.2"
+-      },
+-      "peerDependencies": {
+-        "@supabase/supabase-js": "^2.112.4"
+-      }
+-    },
+-    "node_modules/@supabase/ssr/node_modules/cookie": {
+-      "version": "1.1.1",
+-      "resolved": "https://registry.npmjs.org/cookie/-/cookie-1.1.1.tgz",
+-      "integrity": "sha512-ei8Aos7ja0weRpFzJnEA9UHJ/7XQmqglbRwnf2ATjcB9Wq874VKH9kfjjirM6UhU2/E5fFYadylyhFldcqSidQ==",
+-      "license": "MIT",
+-      "engines": {
+-        "node": ">=18"
+-      },
+-      "funding": {
+-        "type": "opencollective",
+-        "url": "https://opencollective.com/express"
+-      }
+-    },
+     "node_modules/@supabase/storage-js": {
+       "version": "2.112.4",
+       "resolved": "https://registry.npmjs.org/@supabase/storage-js/-/storage-js-2.112.4.tgz",
+@@ -3512,9 +3406,6 @@
+       "cpu": [
+         "arm64"
+       ],
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "MPL-2.0",
+       "optional": true,
+       "os": [
+@@ -3535,9 +3426,6 @@
+       "cpu": [
+         "arm64"
+       ],
+-      "libc": [
+-        "musl"
+-      ],
+       "license": "MPL-2.0",
+       "optional": true,
+       "os": [
+@@ -3558,9 +3446,6 @@
+       "cpu": [
+         "x64"
+       ],
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "MPL-2.0",
+       "optional": true,
+       "os": [
+@@ -3581,9 +3466,6 @@
+       "cpu": [
+         "x64"
+       ],
+-      "libc": [
+-        "musl"
+-      ],
+       "license": "MPL-2.0",
+       "optional": true,
+       "os": [
+@@ -3747,9 +3629,6 @@
+       "cpu": [
+         "arm64"
+       ],
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -3766,9 +3645,6 @@
+       "cpu": [
+         "arm64"
+       ],
+-      "libc": [
+-        "musl"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -3785,9 +3661,6 @@
+       "cpu": [
+         "x64"
+       ],
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -3804,9 +3677,6 @@
+       "cpu": [
+         "x64"
+       ],
+-      "libc": [
+-        "musl"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -3891,6 +3761,76 @@
+         "vite": "^5.2.0 || ^6 || ^7 || ^8"
+       }
+     },
++    "node_modules/@tanstack/query-async-storage-persister": {
++      "version": "5.102.8",
++      "resolved": "https://registry.npmjs.org/@tanstack/query-async-storage-persister/-/query-async-storage-persister-5.102.8.tgz",
++      "integrity": "sha512-9smqFJWyhRo+0l3NqaGFo6CQVr+3jpKOVZBQXI/LL+GoTIGhhxq1wTZegeI63dy0oResZx/EyazGzDjW8harbg==",
++      "license": "MIT",
++      "dependencies": {
++        "@tanstack/query-core": "5.102.8",
++        "@tanstack/query-persist-client-core": "5.102.8"
++      },
++      "funding": {
++        "type": "github",
++        "url": "https://github.com/sponsors/tannerlinsley"
++      }
++    },
++    "node_modules/@tanstack/query-core": {
++      "version": "5.102.8",
++      "resolved": "https://registry.npmjs.org/@tanstack/query-core/-/query-core-5.102.8.tgz",
++      "integrity": "sha512-ZNjkJ33CqvPNec/6lZBnHqLc3EVGPZ9ySLhYahU9TcuRFdmwXewuj0c4hwSWcGHqEUwcSrKeZ+oGcvPBqXcQcg==",
++      "license": "MIT",
++      "funding": {
++        "type": "github",
++        "url": "https://github.com/sponsors/tannerlinsley"
++      }
++    },
++    "node_modules/@tanstack/query-persist-client-core": {
++      "version": "5.102.8",
++      "resolved": "https://registry.npmjs.org/@tanstack/query-persist-client-core/-/query-persist-client-core-5.102.8.tgz",
++      "integrity": "sha512-t3v4/D6ejo/BrPzM5gm/AT3c4CWPCxFa+0cIjAeHAeanGPG6rCjFS1hZnPZH/rf55qe3qYYgx5U6iBZMY1PQjA==",
++      "license": "MIT",
++      "dependencies": {
++        "@tanstack/query-core": "5.102.8"
++      },
++      "funding": {
++        "type": "github",
++        "url": "https://github.com/sponsors/tannerlinsley"
++      }
++    },
++    "node_modules/@tanstack/react-query": {
++      "version": "5.102.8",
++      "resolved": "https://registry.npmjs.org/@tanstack/react-query/-/react-query-5.102.8.tgz",
++      "integrity": "sha512-TYBea4OuXWD7MhaSHq069TWbFe7rcwWN6kzT7JF0OKi1K6c1gTv2IzD6A6ExJsCMozdkqBWeuIUZmu4KQg0O5A==",
++      "license": "MIT",
++      "dependencies": {
++        "@tanstack/query-core": "5.102.8"
++      },
++      "funding": {
++        "type": "github",
++        "url": "https://github.com/sponsors/tannerlinsley"
++      },
++      "peerDependencies": {
++        "react": "^18 || ^19"
++      }
++    },
++    "node_modules/@tanstack/react-query-persist-client": {
++      "version": "5.102.8",
++      "resolved": "https://registry.npmjs.org/@tanstack/react-query-persist-client/-/react-query-persist-client-5.102.8.tgz",
++      "integrity": "sha512-WOZReC+m9klekPtG7eeZ3txJeMA9lg2R0RytSG3yXcZgJItQAVIyoobJdbdIQtlpgcU2tSzsOEBtJacs2vlCOA==",
++      "license": "MIT",
++      "dependencies": {
++        "@tanstack/query-persist-client-core": "5.102.8"
++      },
++      "funding": {
++        "type": "github",
++        "url": "https://github.com/sponsors/tannerlinsley"
++      },
++      "peerDependencies": {
++        "@tanstack/react-query": "^5.102.8",
++        "react": "^18 || ^19"
++      }
++    },
+     "node_modules/@trickfilm400/rollup-plugin-off-main-thread": {
+       "version": "3.0.0-pre1",
+       "resolved": "https://registry.npmjs.org/@trickfilm400/rollup-plugin-off-main-thread/-/rollup-plugin-off-main-thread-3.0.0-pre1.tgz",
+@@ -6085,6 +6025,12 @@
+       "dev": true,
+       "license": "ISC"
+     },
++    "node_modules/idb-keyval": {
++      "version": "6.3.0",
++      "resolved": "https://registry.npmjs.org/idb-keyval/-/idb-keyval-6.3.0.tgz",
++      "integrity": "sha512-um+2dgAWmYsu615EXpWVwSmapJhON0G43t3Ka/EVaohzPQXSMqKEqeDK/oIW3Ow+BXaF2PvSc+oBTFp793A5Ow==",
++      "license": "Apache-2.0"
++    },
+     "node_modules/ignore": {
+       "version": "5.3.2",
+       "resolved": "https://registry.npmjs.org/ignore/-/ignore-5.3.2.tgz",
+@@ -7017,9 +6963,6 @@
+       "cpu": [
+         "arm64"
+       ],
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "MPL-2.0",
+       "optional": true,
+       "os": [
+@@ -7040,9 +6983,6 @@
+       "cpu": [
+         "arm64"
+       ],
+-      "libc": [
+-        "musl"
+-      ],
+       "license": "MPL-2.0",
+       "optional": true,
+       "os": [
+@@ -7063,9 +7003,6 @@
+       "cpu": [
+         "x64"
+       ],
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "MPL-2.0",
+       "optional": true,
+       "os": [
+@@ -7086,9 +7023,6 @@
+       "cpu": [
+         "x64"
+       ],
+-      "libc": [
+-        "musl"
+-      ],
+       "license": "MPL-2.0",
+       "optional": true,
+       "os": [
+diff --git a/package.json b/package.json
+index e6ec91d..3c1fb5e 100644
+--- a/package.json
++++ b/package.json
+@@ -12,11 +12,14 @@
+   "dependencies": {
+     "@base-ui/react": "^1.7.0",
+     "@fontsource-variable/geist": "^5.3.0",
+-    "@supabase/ssr": "^0.12.5",
+     "@supabase/supabase-js": "^2.112.4",
+     "@tailwindcss/vite": "^4.3.3",
++    "@tanstack/query-async-storage-persister": "^5.102.8",
++    "@tanstack/react-query": "^5.102.8",
++    "@tanstack/react-query-persist-client": "^5.102.8",
+     "class-variance-authority": "^0.7.1",
+     "clsx": "^2.1.1",
++    "idb-keyval": "^6.3.0",
+     "lucide-react": "^1.34.0",
+     "react": "^19.2.8",
+     "react-dom": "^19.2.8",
+diff --git a/src/App.tsx b/src/App.tsx
+index e92dc46..1bf4013 100644
+--- a/src/App.tsx
++++ b/src/App.tsx
+@@ -1,34 +1,67 @@
+-import { useState } from 'react'
+-import reactLogo from './assets/react.svg'
+-import viteLogo from '/favicon.svg'
+-import './App.css'
++import { useQuery } from '@tanstack/react-query'
++import { supabase } from './lib/supabase'
++
++// TEMPORARY — this screen exists only to prove B1 (Supabase client +
++// TanStack Query + IndexedDB persistence) actually works end to end.
++// It gets replaced by real routing in B3 and the real Login screen in B4.
++// Don't build on top of this file — it's scratch, not a real screen.
++function useConnectivityCheck() {
++  return useQuery({
++    queryKey: ['b1-connectivity-check'],
++    queryFn: async () => {
++      const { data, error } = await supabase.auth.getSession()
++      if (error) throw error
++      return {
++        checkedAt: new Date().toISOString(),
++        hasSession: data.session !== null,
++      }
++    },
++  })
++}
+ 
+ function App() {
+-  const [count, setCount] = useState(0)
++  const { data, error, isPending, isFetching } = useConnectivityCheck()
+ 
+   return (
+-    <>
+-      <div>
+-        <a href="https://vite.dev" target="_blank">
+-          <img src={viteLogo} className="logo" alt="Vite logo" />
+-        </a>
+-        <a href="https://react.dev" target="_blank">
+-          <img src={reactLogo} className="logo react" alt="React logo" />
+-        </a>
+-      </div>
+-      <h1>Vite + React</h1>
+-      <div className="card">
+-        <button onClick={() => setCount((count) => count + 1)}>
+-          count is {count}
+-        </button>
+-        <p>
+-          Edit <code>src/App.tsx</code> and save to test HMR
+-        </p>
+-      </div>
+-      <p className="read-the-docs">
+-        Click on the Vite and React logos to learn more
++    <div style={{ fontFamily: 'sans-serif', padding: 24, maxWidth: 480 }}>
++      <h1>B1 sanity check</h1>
++      <p>
++        This isn't a real screen — it just confirms the Supabase client and
++        the TanStack Query + IndexedDB persistence setup are wired correctly
++        before B2 (auth) and B3 (routing) get built on top of them.
+       </p>
+-    </>
++
++      {isPending && <p>Checking Supabase connection…</p>}
++
++      {error && (
++        <p style={{ color: 'crimson' }}>
++          Supabase client error: {error.message}
++          <br />
++          Check that <code>VITE_SUPABASE_URL</code> and{' '}
++          <code>VITE_SUPABASE_PUBLISHABLE_KEY</code> are set in your local{' '}
++          <code>.env</code> (see <code>.env.example</code>).
++        </p>
++      )}
++
++      {data && (
++        <>
++          <p style={{ color: 'green' }}>
++            ✅ Supabase client connected. No active session (expected — auth
++            isn't built yet, that's B2).
++          </p>
++          <p style={{ fontSize: 12, color: '#666' }}>
++            Last checked: {data.checkedAt}
++            {isFetching ? ' (refetching…)' : ' (from cache)'}
++          </p>
++          <p style={{ fontSize: 12, color: '#666' }}>
++            To confirm offline persistence: reload this page once while
++            online, then in DevTools → Network, set throttling to "Offline"
++            and reload again — this card should still render instantly from
++            IndexedDB instead of showing a blank/loading screen.
++          </p>
++        </>
++      )}
++    </div>
+   )
+ }
+ 
+diff --git a/src/lib/queryClient.ts b/src/lib/queryClient.ts
+new file mode 100644
+index 0000000..f47a216
+--- /dev/null
++++ b/src/lib/queryClient.ts
+@@ -0,0 +1,62 @@
++import { QueryClient } from '@tanstack/react-query'
++import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister'
++import type { Query } from '@tanstack/query-core'
++import { del, get, set } from 'idb-keyval'
++
++// How long a cached query is considered usable while there's no network to
++// refresh it. This needs to comfortably cover Sudan's periodic national
++// internet blackouts (AGENTS.md), not just a normal short outage — a week is
++// a deliberately generous ceiling, not an expected typical gap.
++const OFFLINE_CACHE_MAX_AGE = 1000 * 60 * 60 * 24 * 7 // 7 days
++
++export const queryClient = new QueryClient({
++  defaultOptions: {
++    queries: {
++      // How long data is considered fresh before TanStack Query will
++      // refetch in the background on next use. Short enough that admin
++      // screens (fee status, payment queue) don't feel stale; long enough
++      // to avoid hammering the free-tier Supabase project on every screen
++      // focus over a slow connection.
++      staleTime: 1000 * 60 * 5, // 5 minutes
++      // gcTime must be >= the persister's maxAge below, or TanStack Query
++      // will garbage-collect a query from memory before the persisted
++      // IndexedDB copy is allowed to expire, which would silently defeat
++      // offline reads.
++      gcTime: OFFLINE_CACHE_MAX_AGE,
++      // Don't spin retrying a query that's failing because there's simply
++      // no network — offline is an expected, calm state here (AGENTS.md),
++      // not a transient error worth hammering.
++      retry: 1,
++    },
++  },
++})
++
++// idb-keyval's get/set/del don't match the getItem/setItem/removeItem shape
++// createAsyncStoragePersister expects — this just adapts one to the other.
++// No serialize/deserialize override needed: IndexedDB (unlike localStorage)
++// supports structured clone directly, so this stays a thin passthrough.
++const idbStorage = {
++  getItem: async (key: string) => (await get(key)) ?? null,
++  setItem: async (key: string, value: string) => {
++    await set(key, value)
++  },
++  removeItem: async (key: string) => {
++    await del(key)
++  },
++}
++
++export const persister = createAsyncStoragePersister({
++  storage: idbStorage,
++  key: 'school-portal-query-cache',
++})
++
++export const persistOptions = {
++  persister,
++  maxAge: OFFLINE_CACHE_MAX_AGE,
++  // Only successful reads get written to IndexedDB — an in-flight mutation
++  // (e.g. a queued payment submission) is TanStack Query state, not cache,
++  // and offline mutation queuing is its own task (E2), not this one.
++  dehydrateOptions: {
++    shouldDehydrateQuery: (query: Query) => query.state.status === 'success',
++  },
++}
+diff --git a/src/lib/supabase.ts b/src/lib/supabase.ts
+index cc9f687..ceab248 100644
+--- a/src/lib/supabase.ts
++++ b/src/lib/supabase.ts
+@@ -1,10 +1,12 @@
+ import { createClient } from '@supabase/supabase-js'
+ 
+ const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
++const supabasePublishableKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
+ 
+-if (!supabaseUrl || !supabaseAnonKey) {
+-  throw new Error('Missing VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY in .env')
++if (!supabaseUrl || !supabasePublishableKey) {
++  throw new Error(
++    'Missing VITE_SUPABASE_URL or VITE_SUPABASE_PUBLISHABLE_KEY in .env',
++  )
+ }
+ 
+-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
++export const supabase = createClient(supabaseUrl, supabasePublishableKey)
+diff --git a/src/main.tsx b/src/main.tsx
+index bef5202..9e1f422 100644
+--- a/src/main.tsx
++++ b/src/main.tsx
+@@ -1,10 +1,14 @@
+ import { StrictMode } from 'react'
+ import { createRoot } from 'react-dom/client'
++import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client'
+ import './index.css'
+ import App from './App.tsx'
++import { persistOptions, queryClient } from './lib/queryClient'
+ 
+ createRoot(document.getElementById('root')!).render(
+   <StrictMode>
+-    <App />
++    <PersistQueryClientProvider client={queryClient} persistOptions={persistOptions}>
++      <App />
++    </PersistQueryClientProvider>
+   </StrictMode>,
+ )

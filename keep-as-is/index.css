@@ -1,0 +1,185 @@
+/* Fonts are self-hosted via @fontsource-variable packages, imported in
+   main.tsx (import "@fontsource-variable/cairo"; import "@fontsource-variable/tajawal";)
+   — NOT loaded from fonts.googleapis.com. The original Figma Make export used
+   an external CDN @import here, which breaks offline-first: a phone opening
+   the app during a connectivity gap before the font is cached could fail to
+   render Arabic text correctly. Do not reintroduce a CDN font import. */
+@import 'tailwindcss';
+
+@theme {
+  --font-sans: 'Tajawal Variable', system-ui, sans-serif;
+  --font-display: 'Cairo Variable', system-ui, sans-serif;
+
+  /* Palette extracted from the school's own logo and poster materials.
+     Dominant purple #441967 / #3b1663 / #4a2467; deep magenta-purple #2b0a46. */
+  --color-background: #f8f4fc;
+  --color-foreground: #1c1030;
+  --color-card: #ffffff;
+  --color-card-foreground: #1c1030;
+
+  --color-primary: #441967;      /* extracted dominant poster purple */
+  --color-primary-foreground: #ffffff;
+  --color-primary-deep: #2b0a46; /* extracted deep magenta-purple */
+  --color-primary-soft: #7a3fae; /* derived lighter tint */
+
+  --color-secondary: #ece0f6;
+  --color-secondary-foreground: #38155e;
+  --color-muted: #f1e8f9;
+  --color-muted-foreground: #695a7c;
+
+  --color-accent: #c79a2e;
+  --color-accent-foreground: #2a2005;
+  --color-accent-soft: #f6edd4;
+
+  --color-border: #e6dcf1;
+  --color-hairline: #efe7f7; /* faintest structural rule */
+  --color-ring: #441967;
+
+  --color-paid: #167045;
+  --color-paid-bg: #e6f4ec;
+  --color-due: #8a5606;
+  --color-due-bg: #fbf0d9;
+  --color-overdue: #b5342a;
+  --color-overdue-bg: #fbe7e4;
+
+  /* small, deliberate radius scale — not one radius everywhere */
+  --radius-sm: 0.625rem;
+  --radius-md: 0.875rem;
+  --radius-lg: 1.25rem;
+  --radius-xl: 1.75rem;
+
+  /* purple-tuned layered shadows */
+  --shadow-card: 0 1px 2px rgba(43, 10, 70, 0.04), 0 6px 20px -12px rgba(43, 10, 70, 0.18);
+  --shadow-raise: 0 2px 6px rgba(43, 10, 70, 0.08), 0 18px 40px -20px rgba(43, 10, 70, 0.35);
+  --shadow-brand: 0 10px 30px -12px rgba(68, 25, 103, 0.55);
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    margin: 0;
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-display);
+    font-weight: 700;
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+  }
+
+  /* Numbers render tabular everywhere for calm, aligned figures */
+  :where(td, th, [data-num]) {
+    font-variant-numeric: tabular-nums;
+  }
+
+  ::selection {
+    background-color: color-mix(in srgb, var(--color-primary) 22%, transparent);
+    color: var(--color-primary);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-ring);
+    outline-offset: 2px;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Brand grounds, ornaments and texture — pulled from the school's poster hexes.
+   Used sparingly so the app reads as designed, not decorated.
+--------------------------------------------------------------------------- */
+
+.brand-gradient {
+  background:
+    radial-gradient(120% 90% at 85% -10%, rgba(122, 63, 174, 0.55) 0%, transparent 55%),
+    radial-gradient(90% 80% at 0% 110%, rgba(197, 154, 46, 0.14) 0%, transparent 50%),
+    linear-gradient(150deg, #3a1257 0%, #2b0a46 55%, #23063b 100%);
+}
+
+.grain {
+  position: relative;
+  isolation: isolate;
+}
+.grain::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.5;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.06'/%3E%3C/svg%3E");
+}
+
+.page-tint {
+  background:
+    radial-gradient(140% 60% at 100% 0%, rgba(122, 63, 174, 0.07) 0%, transparent 45%),
+    var(--color-background);
+}
+
+.gold-rule {
+  height: 1px;
+  border: 0;
+  background: linear-gradient(90deg, transparent, rgba(197, 154, 46, 0.55), transparent);
+}
+.gold-ring {
+  box-shadow: 0 0 0 1px rgba(197, 154, 46, 0.45), var(--shadow-brand);
+}
+
+.ornament {
+  width: 100%;
+  height: 8px;
+  color: rgba(197, 154, 46, 0.7);
+  background:
+    linear-gradient(90deg, transparent 0%, currentColor 45%, currentColor 55%, transparent 100%);
+  -webkit-mask: radial-gradient(circle at center, #000 1.5px, transparent 2px) center/12px 8px repeat-x;
+  mask: radial-gradient(circle at center, #000 1.5px, transparent 2px) center/12px 8px repeat-x;
+}
+
+.logo-knockout {
+  mix-blend-mode: lighten;
+}
+
+@keyframes shimmer {
+  100% { transform: translateX(-100%); }
+}
+.shimmer {
+  position: relative;
+  overflow: hidden;
+  background: var(--color-secondary);
+}
+.shimmer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(100%);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.55), transparent);
+  animation: shimmer 1.5s infinite;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+*:hover,
+*:focus-within {
+  scrollbar-color: color-mix(in srgb, var(--color-primary) 30%, transparent) transparent;
+}
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-thumb {
+  background-color: transparent;
+  border-radius: 999px;
+}
+*:hover::-webkit-scrollbar-thumb,
+*:focus-within::-webkit-scrollbar-thumb {
+  background-color: color-mix(in srgb, var(--color-primary) 28%, transparent);
+}

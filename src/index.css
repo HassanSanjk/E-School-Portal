@@ -1,130 +1,233 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
-@import "@fontsource-variable/geist";
+
+/* Fonts are self-hosted via @fontsource(-variable) packages — NOT loaded from
+   fonts.googleapis.com or any external CDN. An early Figma Make export used a
+   CDN @import here, which breaks offline-first: a phone opening the app
+   during a connectivity gap before the font is cached could fail to render
+   Arabic text correctly. Do not reintroduce a CDN font import.
+
+   Note vs. AGENTS.md: that file names `@fontsource-variable/tajawal`, but no
+   variable-font build of Tajawal actually exists on npm (only Cairo does) —
+   confirmed against the registry while wiring this up. Using the static
+   `@fontsource/tajawal` package instead, at the three weights the UI
+   actually needs (400 body, 500 medium/labels, 700 bold emphasis) rather
+   than all seven available weights, to keep the font payload down. */
+@import "@fontsource-variable/cairo";
+@import "@fontsource/tajawal/400.css";
+@import "@fontsource/tajawal/500.css";
+@import "@fontsource/tajawal/700.css";
 
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-    --font-heading: var(--font-sans);
-    --font-sans: 'Geist Variable', sans-serif;
-    --color-sidebar-ring: var(--sidebar-ring);
-    --color-sidebar-border: var(--sidebar-border);
-    --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-    --color-sidebar-accent: var(--sidebar-accent);
-    --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-    --color-sidebar-primary: var(--sidebar-primary);
-    --color-sidebar-foreground: var(--sidebar-foreground);
-    --color-sidebar: var(--sidebar);
-    --color-chart-5: var(--chart-5);
-    --color-chart-4: var(--chart-4);
-    --color-chart-3: var(--chart-3);
-    --color-chart-2: var(--chart-2);
-    --color-chart-1: var(--chart-1);
-    --color-ring: var(--ring);
-    --color-input: var(--input);
-    --color-border: var(--border);
-    --color-destructive: var(--destructive);
-    --color-accent-foreground: var(--accent-foreground);
-    --color-accent: var(--accent);
-    --color-muted-foreground: var(--muted-foreground);
-    --color-muted: var(--muted);
-    --color-secondary-foreground: var(--secondary-foreground);
-    --color-secondary: var(--secondary);
-    --color-primary-foreground: var(--primary-foreground);
-    --color-primary: var(--primary);
-    --color-popover-foreground: var(--popover-foreground);
-    --color-popover: var(--popover);
-    --color-card-foreground: var(--card-foreground);
-    --color-card: var(--card);
-    --color-foreground: var(--foreground);
+    --font-heading: var(--font-display);
+    --font-sans: var(--font-sans);
+    --font-display: var(--font-display);
+
     --color-background: var(--background);
-    --radius-sm: calc(var(--radius) * 0.6);
-    --radius-md: calc(var(--radius) * 0.8);
-    --radius-lg: var(--radius);
-    --radius-xl: calc(var(--radius) * 1.4);
-    --radius-2xl: calc(var(--radius) * 1.8);
-    --radius-3xl: calc(var(--radius) * 2.2);
-    --radius-4xl: calc(var(--radius) * 2.6);
+    --color-foreground: var(--foreground);
+    --color-card: var(--card);
+    --color-card-foreground: var(--card-foreground);
+    --color-popover: var(--popover);
+    --color-popover-foreground: var(--popover-foreground);
+
+    --color-primary: var(--primary);
+    --color-primary-foreground: var(--primary-foreground);
+    --color-primary-deep: var(--primary-deep);
+    --color-primary-soft: var(--primary-soft);
+
+    --color-secondary: var(--secondary);
+    --color-secondary-foreground: var(--secondary-foreground);
+    --color-muted: var(--muted);
+    --color-muted-foreground: var(--muted-foreground);
+
+    --color-accent: var(--accent);
+    --color-accent-foreground: var(--accent-foreground);
+    --color-accent-soft: var(--accent-soft);
+
+    --color-border: var(--border);
+    --color-input: var(--input);
+    --color-ring: var(--ring);
+    --color-destructive: var(--destructive);
+
+    /* Fee-status colors — functional, not decorative, and deliberately kept
+       independent of the purple brand palette (AGENTS.md / figma brief). */
+    --color-paid: var(--paid);
+    --color-paid-bg: var(--paid-bg);
+    --color-due: var(--due);
+    --color-due-bg: var(--due-bg);
+    --color-overdue: var(--overdue);
+    --color-overdue-bg: var(--overdue-bg);
+
+    /* Radius scale is defined directly per AGENTS.md — not derived from a
+       single base value, so these four numbers stay exactly what's confirmed. */
+    --radius-sm: 0.625rem;
+    --radius-md: 0.875rem;
+    --radius-lg: 1.25rem;
+    --radius-xl: 1.75rem;
 }
 
 :root {
-    --background: oklch(1 0 0);
-    --foreground: oklch(0.145 0 0);
-    --card: oklch(1 0 0);
-    --card-foreground: oklch(0.145 0 0);
-    --popover: oklch(1 0 0);
-    --popover-foreground: oklch(0.145 0 0);
-    --primary: oklch(0.205 0 0);
-    --primary-foreground: oklch(0.985 0 0);
-    --secondary: oklch(0.97 0 0);
-    --secondary-foreground: oklch(0.205 0 0);
-    --muted: oklch(0.97 0 0);
-    --muted-foreground: oklch(0.556 0 0);
-    --accent: oklch(0.97 0 0);
-    --accent-foreground: oklch(0.205 0 0);
-    --destructive: oklch(0.577 0.245 27.325);
-    --border: oklch(0.922 0 0);
-    --input: oklch(0.922 0 0);
-    --ring: oklch(0.708 0 0);
-    --chart-1: oklch(0.87 0 0);
-    --chart-2: oklch(0.556 0 0);
-    --chart-3: oklch(0.439 0 0);
-    --chart-4: oklch(0.371 0 0);
-    --chart-5: oklch(0.269 0 0);
-    --radius: 0.625rem;
-    --sidebar: oklch(0.985 0 0);
-    --sidebar-foreground: oklch(0.145 0 0);
-    --sidebar-primary: oklch(0.205 0 0);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.97 0 0);
-    --sidebar-accent-foreground: oklch(0.205 0 0);
-    --sidebar-border: oklch(0.922 0 0);
-    --sidebar-ring: oklch(0.708 0 0);
-}
+    --font-sans: 'Tajawal', system-ui, sans-serif;
+    --font-display: 'Cairo Variable', system-ui, sans-serif;
 
-.dark {
-    --background: oklch(0.145 0 0);
-    --foreground: oklch(0.985 0 0);
-    --card: oklch(0.205 0 0);
-    --card-foreground: oklch(0.985 0 0);
-    --popover: oklch(0.205 0 0);
-    --popover-foreground: oklch(0.985 0 0);
-    --primary: oklch(0.922 0 0);
-    --primary-foreground: oklch(0.205 0 0);
-    --secondary: oklch(0.269 0 0);
-    --secondary-foreground: oklch(0.985 0 0);
-    --muted: oklch(0.269 0 0);
-    --muted-foreground: oklch(0.708 0 0);
-    --accent: oklch(0.269 0 0);
-    --accent-foreground: oklch(0.985 0 0);
-    --destructive: oklch(0.704 0.191 22.216);
-    --border: oklch(1 0 0 / 10%);
-    --input: oklch(1 0 0 / 15%);
-    --ring: oklch(0.556 0 0);
-    --chart-1: oklch(0.87 0 0);
-    --chart-2: oklch(0.556 0 0);
-    --chart-3: oklch(0.439 0 0);
-    --chart-4: oklch(0.371 0 0);
-    --chart-5: oklch(0.269 0 0);
-    --sidebar: oklch(0.205 0 0);
-    --sidebar-foreground: oklch(0.985 0 0);
-    --sidebar-primary: oklch(0.488 0.243 264.376);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.269 0 0);
-    --sidebar-accent-foreground: oklch(0.985 0 0);
-    --sidebar-border: oklch(1 0 0 / 10%);
-    --sidebar-ring: oklch(0.556 0 0);
+    /* Palette extracted from the school's own logo/poster materials, per AGENTS.md. */
+    --background: #f8f4fc;
+    --foreground: #1c1030;
+    --card: #ffffff;
+    --card-foreground: #1c1030;
+    --popover: #ffffff;
+    --popover-foreground: #1c1030;
+
+    --primary: #441967;
+    --primary-foreground: #ffffff;
+    --primary-deep: #2b0a46;
+    --primary-soft: #7a3fae;
+
+    --secondary: #ece0f6;
+    --secondary-foreground: #38155e;
+    --muted: #f1e8f9;
+    --muted-foreground: #695a7c;
+
+    --accent: #c79a2e;
+    --accent-foreground: #2a2005;
+    --accent-soft: #f6edd4;
+
+    --border: #e6dcf1;
+    --input: #e6dcf1;
+    --ring: #441967;
+    /* No separate "destructive" token in AGENTS.md — reusing the overdue red
+       so there's one red in the app, not two competing ones. */
+    --destructive: #b5342a;
+
+    --paid: #167045;
+    --paid-bg: #e6f4ec;
+    --due: #8a5606;
+    --due-bg: #fbf0d9;
+    --overdue: #b5342a;
+    --overdue-bg: #fbe7e4;
+
+    --radius: var(--radius-md);
 }
 
 @layer base {
   * {
     @apply border-border outline-ring/50;
-    }
+  }
   body {
     @apply bg-background text-foreground;
-    }
+  }
   html {
     @apply font-sans;
-    }
+    -webkit-text-size-adjust: 100%;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-display font-bold;
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+  }
+  /* Numbers render tabular everywhere for calm, aligned figures (fee
+     amounts, dates, scores — see src/lib/format.ts). */
+  :where(td, th, [data-num]) {
+    font-variant-numeric: tabular-nums;
+  }
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Brand grounds and ornaments, carried over as-is from the confirmed design
+   export (school poster hexes). Used sparingly — nav chrome, not decoration.
+   Not exercised by any screen yet (B1 has no UI); wiring the CSS in now so
+   B4's Login screen and the nav shell can use these classes without another
+   round-trip through index.css.
+--------------------------------------------------------------------------- */
+
+.brand-gradient {
+  background:
+    radial-gradient(120% 90% at 85% -10%, rgba(122, 63, 174, 0.55) 0%, transparent 55%),
+    radial-gradient(90% 80% at 0% 110%, rgba(197, 154, 46, 0.14) 0%, transparent 50%),
+    linear-gradient(150deg, #3a1257 0%, #2b0a46 55%, #23063b 100%);
+}
+
+.grain {
+  position: relative;
+  isolation: isolate;
+}
+.grain::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.5;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.06'/%3E%3C/svg%3E");
+}
+
+.page-tint {
+  background:
+    radial-gradient(140% 60% at 100% 0%, rgba(122, 63, 174, 0.07) 0%, transparent 45%),
+    var(--background);
+}
+
+.gold-rule {
+  height: 1px;
+  border: 0;
+  background: linear-gradient(90deg, transparent, rgba(197, 154, 46, 0.55), transparent);
+}
+.gold-ring {
+  box-shadow: 0 0 0 1px rgba(197, 154, 46, 0.45), 0 10px 30px -12px rgba(68, 25, 103, 0.55);
+}
+
+.ornament {
+  width: 100%;
+  height: 8px;
+  color: rgba(197, 154, 46, 0.7);
+  background:
+    linear-gradient(90deg, transparent 0%, currentColor 45%, currentColor 55%, transparent 100%);
+  -webkit-mask: radial-gradient(circle at center, #000 1.5px, transparent 2px) center/12px 8px repeat-x;
+  mask: radial-gradient(circle at center, #000 1.5px, transparent 2px) center/12px 8px repeat-x;
+}
+
+@keyframes shimmer {
+  100% { transform: translateX(-100%); }
+}
+.shimmer {
+  position: relative;
+  overflow: hidden;
+  background: var(--secondary);
+}
+.shimmer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(100%);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.55), transparent);
+  animation: shimmer 1.5s infinite;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+*:hover,
+*:focus-within {
+  scrollbar-color: color-mix(in srgb, var(--primary) 30%, transparent) transparent;
+}
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-thumb {
+  background-color: transparent;
+  border-radius: 999px;
+}
+*:hover::-webkit-scrollbar-thumb,
+*:focus-within::-webkit-scrollbar-thumb {
+  background-color: color-mix(in srgb, var(--primary) 28%, transparent);
 }
