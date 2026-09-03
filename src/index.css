@@ -154,6 +154,10 @@
     linear-gradient(150deg, #3a1257 0%, #2b0a46 55%, #23063b 100%);
 }
 
+.logo-knockout {
+  mix-blend-mode: lighten;
+}
+
 .grain {
   position: relative;
   isolation: isolate;

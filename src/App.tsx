@@ -3,6 +3,7 @@ import { useAuth } from './hooks/useAuth'
 import { ProtectedRoute, PublicOnlyRoute } from './routes/ProtectedRoute'
 import { RoleRedirect } from './routes/RoleRedirect'
 import { LoginPage } from './pages/LoginPage'
+import { SplashScreen } from './pages/SplashScreen'
 import { StudentHome } from './pages/StudentHome'
 import { TeacherHome } from './pages/TeacherHome'
 import { AdminHome } from './pages/AdminHome'
@@ -10,15 +11,10 @@ import { AdminHome } from './pages/AdminHome'
 function App() {
   const { isInitializing } = useAuth()
 
-  // Global splash placeholder while the very first session check resolves.
-  // The real splash screen (branded, Arabic) is B5 — this just avoids a
-  // route-guard flicker/decision on incomplete data before that exists.
+  // While the very first session check resolves. Real branded splash now
+  // that B5's built it — this used to be a plain-text placeholder.
   if (isInitializing) {
-    return (
-      <div style={{ fontFamily: 'sans-serif', padding: 24 }}>
-        <p>...جارٍ التحميل</p>
-      </div>
-    )
+    return <SplashScreen />
   }
 
   return (
