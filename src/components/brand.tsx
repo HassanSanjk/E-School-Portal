@@ -1,12 +1,9 @@
-// Official school logo (src/assets/logo.png) with two treatments:
-//  - <Logo> : gold shield knocked out over a dark purple ground (blend mode).
-//  - <Crest>: the logo on a crafted dark plate with a gold hairline ring, for
-//             placing the emblem on light surfaces.
+// Official school logo (src/assets/logo.png) - has real alpha transparency,
+// so it composites correctly on any background without any CSS trick.
 import logoSrc from '@/assets/logo.png'
 import { SCHOOL_NAME_FULL, SCHOOL_NAME_LINE_1, SCHOOL_NAME_LINE_2 } from '@/lib/constants'
 import { cn } from '@/lib/utils'
 
-/** Bare logo image; assumes it sits on a dark purple ground (blend removes black). */
 export function Logo({ size = 40, className }: { size?: number; className?: string }) {
   return (
     <img
@@ -14,7 +11,7 @@ export function Logo({ size = 40, className }: { size?: number; className?: stri
       alt={SCHOOL_NAME_FULL}
       width={size}
       height={size}
-      className={cn('logo-knockout object-contain select-none', className)}
+      className={cn('object-contain select-none', className)}
       style={{ width: size, height: size }}
       draggable={false}
     />

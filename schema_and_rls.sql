@@ -191,5 +191,39 @@ create policy "teacher reads own salary" on salaries for select to authenticated
 create policy "admin full access to salaries" on salaries for all to authenticated using (my_role() = 'admin') with check (my_role() = 'admin');
 
 -- ============================================================
+-- Base table grants
+-- ============================================================
+-- RLS policies control *which rows* a role may touch, but Postgres still
+-- requires the underlying SQL-level GRANT before a role may touch a table
+-- *at all* — RLS is consulted only after that check passes. Supabase's own
+-- dashboard/CLI table-creation path applies this automatically; running
+-- this script directly via the SQL editor does not, and the two tables
+-- looking equally "protected by RLS" either way makes the gap easy to miss.
+-- Confirmed live on this project on 2026-09-02: every table had TRUNCATE/
+-- TRIGGER/REFERENCES granted but no SELECT/INSERT/UPDATE/DELETE, which
+-- made every table 403 for every role, RLS policies notwithstanding.
+--
+-- Granting to anon here is deliberate, not an oversight: no policy in this
+-- file grants anon anything (every policy above is `to authenticated`), so
+-- an anon request against any table returns zero rows regardless of this
+-- grant — matching Supabase's own default pattern of granting broadly and
+-- relying on RLS, not table grants, as the actual boundary. Verified
+-- directly (impersonating a random authenticated, non-admin identity):
+-- salaries/profiles/payments all return zero rows, subjects (the one
+-- intentionally-open-to-any-authenticated-user table) returns every row.
+-- service_role normally bypasses RLS and grants automatically in a
+-- standard Supabase-bootstrapped project. It does NOT here, for the same
+-- reason anon/authenticated didn't above — confirmed live on 2026-09-04
+-- when the PIN-reset Edge Function's service_role client was rejected with
+-- `permission denied for table profiles` (Postgres error 42501) despite
+-- the caller genuinely being an admin. Grant it explicitly rather than
+-- relying on the usual automatic behavior.
+grant usage on schema public to anon, authenticated, service_role;
+grant select, insert, update, delete on all tables in schema public to anon, authenticated, service_role;
+-- Applies the same grants automatically to any table created later in this
+-- schema, so this can't quietly reappear as new tables get added.
+alter default privileges in schema public grant select, insert, update, delete on tables to anon, authenticated, service_role;
+
+-- ============================================================
 -- End of script.
 -- ============================================================

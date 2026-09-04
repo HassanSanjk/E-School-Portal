@@ -5,6 +5,7 @@ import { AlertTriangle } from '@/components/icons'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
+import { PasswordInput } from '@/components/ui/password-input'
 import { Field, FieldLabel } from '@/components/ui/field'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { SCHOOL_NAME_FULL, currentAcademicYearLabel } from '@/lib/constants'
@@ -52,9 +53,9 @@ export function LoginPage() {
         </div>
       </div>
 
-      <div className="flex-1 px-5 -mt-8">
+      <div className="flex-1 px-5 -mt-5">
         <div className="max-w-sm w-full mx-auto">
-          <Card className="p-5">
+          <Card className="p-5 pt-7">
             <div className="mb-5 text-center">
               <h2 className="font-display text-lg font-bold">تسجيل الدخول</h2>
               <p className="text-sm text-muted-foreground mt-1">
@@ -87,10 +88,9 @@ export function LoginPage() {
               </Field>
               <Field>
                 <FieldLabel htmlFor={pinInputId}>الرمز السري</FieldLabel>
-                <Input
+                <PasswordInput
                   id={pinInputId}
                   name="pin"
-                  type="password"
                   inputMode="numeric"
                   autoComplete="current-password"
                   dir="ltr"

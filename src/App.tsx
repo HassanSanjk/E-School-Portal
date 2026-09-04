@@ -7,6 +7,7 @@ import { SplashScreen } from './pages/SplashScreen'
 import { StudentHome } from './pages/StudentHome'
 import { TeacherHome } from './pages/TeacherHome'
 import { AdminHome } from './pages/AdminHome'
+import { AdminPinReset } from './pages/AdminPinReset'
 
 function App() {
   const { isInitializing } = useAuth()
@@ -33,6 +34,7 @@ function App() {
 
       <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
         <Route path="/admin" element={<AdminHome />} />
+        <Route path="/admin/pin-reset" element={<AdminPinReset />} />
       </Route>
 
       <Route path="/" element={<RoleRedirect />} />
