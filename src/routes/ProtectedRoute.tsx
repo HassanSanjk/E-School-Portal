@@ -13,8 +13,12 @@ export function ProtectedRoute({ allowedRoles }: { allowedRoles: Role[] }) {
   // genuinely unknown at this point, not "no role". Don't redirect on a
   // guess.
   if (isProfileLoading) return <AuthResolving />
-  if (!role || !allowedRoles.includes(role)) {
-    return <Navigate to={role ? homePathForRole(role) : '/login'} replace />
+  if (!role) return <Navigate to="/login" replace />
+  // Admin reaches every route regardless of which roles a given route
+  // names — per IMPLEMENTATION_TASK_LIST.md's B7 spec. Every other role
+  // stays confined to its own allowedRoles list.
+  if (role !== 'admin' && !allowedRoles.includes(role)) {
+    return <Navigate to={homePathForRole(role)} replace />
   }
 
   return <Outlet />
