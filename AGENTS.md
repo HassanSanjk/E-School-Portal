@@ -56,13 +56,19 @@ national internet blackouts, and costs $0–$15/year to run.
 - Styling: **Tailwind CSS v4**, CSS-first config via `@theme` in `src/index.css`
   — no `tailwind.config.ts`, no PostCSS config file needed. See the design
   tokens block below for the exact values to use; do not invent new ones.
-- UI components: **real shadcn/ui (Radix primitives)**, not a hand-rolled
-  clone. If a component set already exists in the repo that merely *looks*
-  like shadcn/ui but isn't built on `@radix-ui/*` packages, replace it — this
-  matters specifically because Radix gives correct ARIA roles and keyboard
-  navigation (tabs, dialogs, menus) for free, which a visual clone won't have
-  even if the styling matches exactly. Restyle real shadcn/ui components with
-  the CSS tokens below rather than keeping a custom component library that
+- UI components: **real shadcn/ui**, not a hand-rolled clone. As of July
+  2026 `shadcn init` defaults new projects to the **Base UI** flavor rather
+  than Radix (Radix isn't deprecated, just no longer the default — see
+  shadcn's own July 2026 changelog); this repo uses that default
+  (`components.json` style `base-nova`, `@base-ui/react` as the primitive
+  library). If a component set already exists in the repo that merely
+  *looks* like shadcn/ui but isn't built on `@base-ui/react` (or
+  `@radix-ui/*`, if a component is ever restyled onto Radix instead),
+  replace it — this matters specifically because a real headless primitive
+  library gives correct ARIA roles and keyboard navigation (tabs, dialogs,
+  menus) for free, which a visual clone won't have even if the styling
+  matches exactly. Restyle real shadcn/ui components with the CSS tokens
+  below rather than keeping a custom component library that
   merely resembles them.
 - Data fetching/cache: TanStack Query, persisted to IndexedDB
 - PWA: vite-plugin-pwa
@@ -70,7 +76,14 @@ national internet blackouts, and costs $0–$15/year to run.
 - Auth: Supabase Auth via synthetic email pattern — `{id}@school.internal` +
   PIN as password. Users only ever see "ID + PIN" in the UI, never an email
   field.
-- Excel import: SheetJS, client-side only, in the admin's browser
+- Excel import: SheetJS, client-side only, in the admin's browser. **Install
+  from SheetJS's own CDN, not the plain `xlsx` npm package** — found during
+  C1: the npm registry's `xlsx` package has been permanently stuck at
+  `0.18.5` (published 2022) since SheetJS stopped publishing there, and that
+  version has two unpatched CVEs (prototype pollution, ReDoS). `package.json`
+  should depend on `"xlsx": "https://cdn.sheetjs.com/xlsx-<version>/xlsx-<version>.tgz"`
+  per SheetJS's own install docs — check `docs.sheetjs.com` for the current
+  version before bumping it.
 - File storage: Supabase Storage (tutorial PDFs, payment screenshots) —
   compress images client-side before upload
 - Hosting: Cloudflare Pages (frontend, git-based auto-deploy), Supabase free
@@ -80,9 +93,11 @@ national internet blackouts, and costs $0–$15/year to run.
 - Language & direction: Arabic-only, RTL (`dir="rtl"` set globally, no
   language toggle). No i18n library — UI copy is written directly in Arabic.
   Fonts: **Cairo** (display/headings) + **Tajawal** (body) — install via
-  `@fontsource-variable/cairo` and `@fontsource-variable/tajawal` (npm
-  packages that ship the actual font files into the build) and import them in
-  `src/index.css`. **Do not load fonts from `fonts.googleapis.com` or any
+  `@fontsource-variable/cairo` (Cairo ships a variable-font build) and
+  `@fontsource/tajawal` (Tajawal doesn't have a variable-font npm package —
+  `@fontsource-variable/tajawal` doesn't exist; use the static family
+  instead) and import them in `src/index.css`. **Do not load fonts from
+  `fonts.googleapis.com` or any
   external CDN at runtime** — an early Figma Make export did this and it
   breaks offline-first: a phone opening the app during a connectivity gap
   before the font is cached could fail to render Arabic text correctly.

@@ -8,6 +8,7 @@ import { StudentHome } from './pages/StudentHome'
 import { TeacherHome } from './pages/TeacherHome'
 import { AdminHome } from './pages/AdminHome'
 import { AdminPinReset } from './pages/AdminPinReset'
+import { AdminExcelImport } from './pages/AdminExcelImport'
 
 function App() {
   const { isInitializing } = useAuth()
@@ -35,6 +36,7 @@ function App() {
       <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
         <Route path="/admin" element={<AdminHome />} />
         <Route path="/admin/pin-reset" element={<AdminPinReset />} />
+        <Route path="/admin/excel-import" element={<AdminExcelImport />} />
       </Route>
 
       <Route path="/" element={<RoleRedirect />} />
