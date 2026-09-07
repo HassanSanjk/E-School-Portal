@@ -193,6 +193,11 @@ export interface RowResult {
   studentNumber: string
   fullName: string
   changes: FieldChange[]
+  /** The matched existing student's id (students.id === profiles.id ===
+   * auth.users.id) — present for 'changed' and 'unchanged', absent for
+   * 'new' (nothing to match yet) and 'invalid'. Needed at commit time to
+   * target the right row for an update. */
+  existingId?: string
   issue?: string
 }
 
@@ -262,6 +267,7 @@ export function diffAgainstExisting(mappedRows: MappedRow[], existing: ExistingS
       studentNumber: sn,
       fullName,
       changes,
+      existingId: existingStudent.id,
     }
   })
 
@@ -272,4 +278,99 @@ export function diffAgainstExisting(mappedRows: MappedRow[], existing: ExistingS
   for (const r of results) counts[r.status]++
 
   return { results, notInFile, counts }
+}
+
+// ============================================================
+// C3 — commit. Two genuinely different write paths:
+//
+//   - 'new' rows need a login account, which means auth.users, which a
+//     client can never create for someone else — that goes through the
+//     admin-bulk-import-students Edge Function (service_role).
+//   - 'changed' rows are plain updates to students/profiles, which the
+//     admin's own session can already do directly — RLS is the real gate
+//     either way, so a direct client call is just as safe here and avoids
+//     routing a plain update through an Edge Function for no reason.
+// ============================================================
+
+/** C2's required-for-diff fields (student_number, full_name) aren't
+ * enough to actually create an account — `students.grade_level` and
+ * `students.class_section` are NOT NULL in the schema, and `login_id` is
+ * unconditionally needed to build the synthetic email. Checked
+ * client-side so a row can be excluded with a clear reason before ever
+ * calling the Edge Function — which re-checks the same thing server-side
+ * regardless, since a client-side check is convenience, not the boundary. */
+export function creationBlockReason(values: Partial<Record<StudentField, string>>): string | null {
+  if (!values.login_id) return 'رقم الدخول مطلوب لإنشاء حساب جديد.'
+  if (!values.grade_level) return 'الصف مطلوب لإنشاء حساب جديد.'
+  if (!values.class_section) return 'الشعبة مطلوبة لإنشاء حساب جديد.'
+  return null
+}
+
+export interface NewStudentPayload {
+  studentNumber: string
+  fullName: string
+  loginId: string
+  gradeLevel: string
+  classSection: string
+  guardianName: string
+  guardianPhone: string
+}
+
+export function toNewStudentPayload(values: Partial<Record<StudentField, string>>): NewStudentPayload {
+  return {
+    studentNumber: values.student_number ?? '',
+    fullName: values.full_name ?? '',
+    loginId: values.login_id ?? '',
+    gradeLevel: values.grade_level ?? '',
+    classSection: values.class_section ?? '',
+    guardianName: values.guardian_name ?? '',
+    guardianPhone: values.guardian_phone ?? '',
+  }
+}
+
+export interface CreateResult {
+  studentNumber: string
+  fullName: string
+  status: 'created' | 'skipped' | 'failed'
+  loginId?: string
+  pin?: string
+  error?: string
+}
+
+/** Calls the Edge Function for every row that needs a brand-new account.
+ * Rows that fail `creationBlockReason` should already be filtered out
+ * before calling this — this function doesn't re-run that check, it just
+ * sends what it's given. */
+export async function commitNewStudents(rows: NewStudentPayload[]): Promise<CreateResult[]> {
+  if (rows.length === 0) return []
+  const { data, error } = await supabase.functions.invoke('admin-bulk-import-students', {
+    body: { rows },
+  })
+  if (error) throw error
+  return (data?.results ?? []) as CreateResult[]
+}
+
+const PROFILE_FIELDS: ReadonlySet<StudentField> = new Set(['full_name', 'login_id'])
+
+/** Applies one 'changed' row's diffed fields directly, split by which
+ * table actually owns each field. Relies entirely on RLS (admin-only
+ * `for all` policies on both tables) for the access-control boundary —
+ * consistent with how this project treats RLS everywhere else. */
+export async function commitChangedStudent(existingId: string, changes: FieldChange[]): Promise<void> {
+  const profileUpdates: Record<string, string> = {}
+  const studentUpdates: Record<string, string> = {}
+
+  for (const c of changes) {
+    if (PROFILE_FIELDS.has(c.field)) profileUpdates[c.field] = c.after
+    else studentUpdates[c.field] = c.after
+  }
+
+  if (Object.keys(profileUpdates).length > 0) {
+    const { error } = await supabase.from('profiles').update(profileUpdates).eq('id', existingId)
+    if (error) throw error
+  }
+  if (Object.keys(studentUpdates).length > 0) {
+    const { error } = await supabase.from('students').update(studentUpdates).eq('id', existingId)
+    if (error) throw error
+  }
 }
