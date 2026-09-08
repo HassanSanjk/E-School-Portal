@@ -12,6 +12,9 @@ export function AdminHome() {
         <Link to="/admin/excel-import" style={{ color: '#441967', textDecoration: 'underline' }}>
           استيراد بيانات الطالبات من إكسل →
         </Link>
+        <Link to="/admin/fee-schedule" style={{ color: '#441967', textDecoration: 'underline' }}>
+          جدول الرسوم الدراسية →
+        </Link>
       </div>
     </>
   )
