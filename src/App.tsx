@@ -10,6 +10,7 @@ import { AdminHome } from './pages/AdminHome'
 import { AdminPinReset } from './pages/AdminPinReset'
 import { AdminExcelImport } from './pages/AdminExcelImport'
 import { AdminFeeSchedule } from './pages/AdminFeeSchedule'
+import { AdminFeesDueSoon } from './pages/AdminFeesDueSoon'
 
 function App() {
   const { isInitializing } = useAuth()
@@ -39,6 +40,7 @@ function App() {
         <Route path="/admin/pin-reset" element={<AdminPinReset />} />
         <Route path="/admin/excel-import" element={<AdminExcelImport />} />
         <Route path="/admin/fee-schedule" element={<AdminFeeSchedule />} />
+        <Route path="/admin/fees-due-soon" element={<AdminFeesDueSoon />} />
       </Route>
 
       <Route path="/" element={<RoleRedirect />} />

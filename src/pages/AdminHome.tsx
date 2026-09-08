@@ -15,6 +15,9 @@ export function AdminHome() {
         <Link to="/admin/fee-schedule" style={{ color: '#441967', textDecoration: 'underline' }}>
           جدول الرسوم الدراسية →
         </Link>
+        <Link to="/admin/fees-due-soon" style={{ color: '#441967', textDecoration: 'underline' }}>
+          الرسوم المستحقة قريبًا →
+        </Link>
       </div>
     </>
   )
