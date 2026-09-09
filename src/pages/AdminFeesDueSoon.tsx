@@ -1,18 +1,22 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router'
 import { Card, CardContent } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Input } from '@/components/ui/input'
-import { AlertTriangle, Search, Clock } from '@/components/icons'
+import { AlertTriangle, Search, Clock, Copy, Check } from '@/components/icons'
 import { num, currency, FEE_STATUS_LABEL, type FeeStatus } from '@/lib/format'
-import { fetchFeesWithStatus, type FeeRow } from '@/lib/fees'
+import { copyToClipboard } from '@/lib/utils'
+import { fetchFeesWithStatus, buildReminderMessage, type FeeRow } from '@/lib/fees'
 
-// C5 — Fees Due Soon. Per AGENTS.md this is the most important screen in
-// the app (it's the entire replacement for automated reminders), and per
-// figma_make_prompt.md admin screens need both a mobile and a desktop
-// treatment, with true tables reserved for the wider admin view and
-// card-based lists on mobile — so this renders two markups from the same
-// sorted/filtered data rather than one cramped table at every width.
+// C5 (list) + C6 ("copy reminder text"). Per AGENTS.md this is the most
+// important screen in the app (it's the entire replacement for automated
+// reminders), and per figma_make_prompt.md admin screens need both a
+// mobile and a desktop treatment, with true tables reserved for the wider
+// admin view and card-based lists on mobile — so this renders two markups
+// from the same sorted/filtered data rather than one cramped table at
+// every width. The copy button fills the clipboard only — nothing is ever
+// sent by the system itself, per the no-automated-messaging rule.
 type SortKey = 'dueDate' | 'amount' | 'name'
 type SortDir = 'asc' | 'desc'
 type StatusFilter = 'all' | FeeStatus
@@ -40,6 +44,13 @@ export function AdminFeesDueSoon() {
   const [search, setSearch] = useState('')
   const [sortKey, setSortKey] = useState<SortKey>('dueDate')
   const [sortDir, setSortDir] = useState<SortDir>('asc')
+  const [copiedRowId, setCopiedRowId] = useState<string | null>(null)
+
+  function handleCopyReminder(row: FeeRow) {
+    copyToClipboard(buildReminderMessage(row))
+    setCopiedRowId(row.id)
+    setTimeout(() => setCopiedRowId((id) => (id === row.id ? null : id)), 2000)
+  }
 
   useEffect(() => {
     let cancelled = false
@@ -216,7 +227,12 @@ export function AdminFeesDueSoon() {
                 {/* Mobile: card list */}
                 <div className="sm:hidden space-y-2">
                   {visibleRows.map((r) => (
-                    <FeeCard key={r.id} row={r} />
+                    <FeeCard
+                      key={r.id}
+                      row={r}
+                      isCopied={copiedRowId === r.id}
+                      onCopyReminder={() => handleCopyReminder(r)}
+                    />
                   ))}
                 </div>
 
@@ -242,6 +258,7 @@ export function AdminFeesDueSoon() {
                             onClick={() => toggleSort('dueDate')}
                           />
                           <th className="text-start font-medium px-3 py-2 border-b border-border">الحالة</th>
+                          <th className="text-start font-medium px-3 py-2 border-b border-border" />
                         </tr>
                       </thead>
                       <tbody>
@@ -283,6 +300,26 @@ export function AdminFeesDueSoon() {
                                 )}
                               </div>
                             </td>
+                            <td className="px-3 py-2 border-b border-border whitespace-nowrap">
+                              {r.status !== 'paid' && (
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleCopyReminder(r)}
+                                >
+                                  {copiedRowId === r.id ? (
+                                    <>
+                                      <Check className="size-3.5" /> تم النسخ
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Copy className="size-3.5" /> نسخ نص التذكير
+                                    </>
+                                  )}
+                                </Button>
+                              )}
+                            </td>
                           </tr>
                         ))}
                       </tbody>
@@ -308,7 +345,15 @@ function SortableHeader({ label, active, onClick }: { label: string; active: str
   )
 }
 
-function FeeCard({ row }: { row: FeeRow }) {
+function FeeCard({
+  row,
+  isCopied,
+  onCopyReminder,
+}: {
+  row: FeeRow
+  isCopied: boolean
+  onCopyReminder: () => void
+}) {
   return (
     <Card className="p-3">
       <CardContent className="p-0 space-y-1.5">
@@ -343,7 +388,21 @@ function FeeCard({ row }: { row: FeeRow }) {
             قيد المراجعة
           </div>
         )}
+        {row.status !== 'paid' && (
+          <Button type="button" variant="outline" size="sm" className="w-full" onClick={onCopyReminder}>
+            {isCopied ? (
+              <>
+                <Check className="size-3.5" /> تم النسخ
+              </>
+            ) : (
+              <>
+                <Copy className="size-3.5" /> نسخ نص التذكير
+              </>
+            )}
+          </Button>
+        )}
       </CardContent>
     </Card>
   )
+
 }

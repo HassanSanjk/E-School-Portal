@@ -18,6 +18,9 @@ export function AdminHome() {
         <Link to="/admin/fees-due-soon" style={{ color: '#441967', textDecoration: 'underline' }}>
           الرسوم المستحقة قريبًا →
         </Link>
+        <Link to="/admin/payment-review" style={{ color: '#441967', textDecoration: 'underline' }}>
+          مراجعة طلبات الدفع →
+        </Link>
       </div>
     </>
   )

@@ -77,3 +77,6 @@ export const Key = (p: P) => (
 export const GraduationCap = (p: P) => (
   <svg {...base} {...p}><path d="m3 9 9-4 9 4-9 4z" /><path d="M7 11v4c0 1 2 2 5 2s5-1 5-2v-4" /><path d="M21 9v4" /></svg>
 );
+export const ImageOff = (p: P) => (
+  <svg {...base} {...p}><path d="M3 3l18 18" /><path d="M21 15V6a2 2 0 0 0-2-2H8" /><path d="M3 8v10a2 2 0 0 0 2 2h13" /><circle cx="8.5" cy="9.5" r="1.5" /><path d="m5 17 4.5-4.5a2 2 0 0 1 2.8 0L14 14" /></svg>
+);

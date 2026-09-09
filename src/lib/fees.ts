@@ -5,7 +5,8 @@
 // no automated outbound messaging of any kind). Read-only: derives status
 // from live `fees`/`payments` data, doesn't write anything.
 import { supabase } from './supabase'
-import { deriveFeeStatus, daysUntil, type FeeStatus } from './format'
+import { deriveFeeStatus, daysUntil, currency, longDate, type FeeStatus } from './format'
+import { SCHOOL_NAME_SHORT } from './constants'
 
 /** Postgres `date` columns come back as a bare "YYYY-MM-DD" string. The
  * built-in Date constructor parses that as UTC midnight, but
@@ -14,8 +15,9 @@ import { deriveFeeStatus, daysUntil, type FeeStatus } from './format'
  * couple of hours right around midnight. Parsing as *local* midnight
  * instead keeps the boundary aligned with the school's actual calendar
  * day. This is a call-site fix, not a change to format.ts itself — that
- * file stays exactly as carried over from the design export, per AGENTS.md. */
-function parseDateOnly(dateStr: string): Date {
+ * file stays exactly as carried over from the design export, per AGENTS.md.
+ * Exported so C6's reminder text formats the same date the same way. */
+export function parseDateOnly(dateStr: string): Date {
   const [y, m, d] = dateStr.split('-').map(Number)
   return new Date(y, m - 1, d)
 }
@@ -97,4 +99,40 @@ export async function fetchFeesWithStatus(): Promise<FeeRow[]> {
       daysUntilDue: daysUntil(due),
     }
   })
+}
+
+// ============================================================
+// C6 — "Copy reminder text" helper.
+//
+// Not automated messaging: AGENTS.md's non-negotiable is no automated
+// outbound messaging of any kind, and this doesn't send anything — it
+// just fills the clipboard with text an admin reads over, then pastes and
+// sends herself through whatever channel she already uses (WhatsApp, a
+// phone call, in person). That manual step is deliberate, not a
+// limitation to work around.
+// ============================================================
+
+/** A ready-to-paste reminder, in Arabic, for one due or overdue fee.
+ * Deliberately doesn't cover 'paid' rows — there's nothing to remind
+ * anyone about once a fee is paid. */
+export function buildReminderMessage(row: FeeRow): string {
+  const dueLabel = longDate(parseDateOnly(row.dueDate))
+  const feeLabel = row.installmentLabel
+    ? `${row.installmentLabel} — ${row.academicYear}`
+    : `رسوم العام الدراسي ${row.academicYear}`
+
+  const lines = [
+    `تذكير من ${SCHOOL_NAME_SHORT}`,
+    '',
+    `الطالبة: ${row.fullName}`,
+    feeLabel,
+    `المبلغ المستحق: ${currency(row.amountDue)}`,
+    row.status === 'overdue'
+      ? `تاريخ الاستحقاق: ${dueLabel} (متأخر السداد)`
+      : `تاريخ الاستحقاق: ${dueLabel}`,
+    '',
+    'يُرجى السداد في أقرب وقت ممكن. شكرًا لتعاونكم.',
+  ]
+
+  return lines.join('\n')
 }

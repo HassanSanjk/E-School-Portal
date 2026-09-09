@@ -14,6 +14,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Field, FieldLabel } from '@/components/ui/field'
 import { Upload, FileText, X, AlertTriangle, Copy } from '@/components/icons'
 import { num } from '@/lib/format'
+import { copyToClipboard } from '@/lib/utils'
 import {
   openWorkbookFile,
   extractSheet,
@@ -269,10 +270,6 @@ export function AdminExcelImport() {
       creationError && payloads.length > 0 ? `تعذّر إنشاء الحسابات الجديدة: ${creationError}` : null,
     )
     setCommitStage('done')
-  }
-
-  function copyToClipboard(text: string) {
-    navigator.clipboard?.writeText(text).catch(() => {})
   }
 
   return (
