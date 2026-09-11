@@ -22,11 +22,11 @@ import {
   type OpenedWorkbook,
   type ParsedSheet,
 } from '@/lib/excelImport'
+import { fetchExistingStudents } from '@/lib/students'
 import {
   STUDENT_FIELDS,
   guessMapping,
   applyMapping,
-  fetchExistingStudents,
   diffAgainstExisting,
   creationBlockReason,
   toNewStudentPayload,

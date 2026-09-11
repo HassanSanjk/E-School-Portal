@@ -116,10 +116,19 @@ create table salaries (
 -- ============================================================
 -- Helper functions
 -- ============================================================
+-- SET search_path is explicit and mandatory on every SECURITY DEFINER
+-- function below — without it, a SECURITY DEFINER function is vulnerable to
+-- search_path hijacking (a caller could create an object in a schema ahead
+-- of the default search_path to shadow a trusted table/function the
+-- definer relies on). The live project already had this protection when
+-- checked during the B8 security review — Supabase's SQL editor appears to
+-- add it automatically — but that shouldn't be relied on implicitly: a
+-- fresh run of this file via a plain psql connection or another migration
+-- tool might not get the same treatment, so it's spelled out here.
 
 create or replace function my_role() returns text as $$
   select role::text from profiles where id = auth.uid();
-$$ language sql stable security definer;
+$$ language sql stable security definer set search_path = public;
 
 create or replace function is_own_class(target_grade text, target_section text) returns boolean as $$
   select exists (
@@ -128,7 +137,22 @@ create or replace function is_own_class(target_grade text, target_section text) 
       and grade_level = target_grade
       and class_section = target_section
   );
-$$ language sql stable security definer;
+$$ language sql stable security definer set search_path = public;
+
+-- Neither function has a legitimate reason to be callable directly via
+-- PostgREST RPC (/rest/v1/rpc/my_role, /rest/v1/rpc/is_own_class) or by an
+-- unauthenticated caller — both are only ever meant to be evaluated
+-- implicitly inside RLS policies for an authenticated request. Confirmed
+-- via Supabase's security advisor during B8 that both were callable by
+-- `anon` by default; revoked accordingly. Neither function currently
+-- returns anything exploitable to an anon caller anyway (auth.uid() is
+-- null for anon, so both just return null/false), but least-privilege
+-- doesn't depend on that remaining true if either function is ever
+-- modified later.
+revoke execute on function my_role() from public, anon;
+revoke execute on function is_own_class(text, text) from public, anon;
+grant execute on function my_role() to authenticated;
+grant execute on function is_own_class(text, text) to authenticated;
 
 -- ============================================================
 -- Row-Level Security
@@ -223,6 +247,39 @@ grant select, insert, update, delete on all tables in schema public to anon, aut
 -- Applies the same grants automatically to any table created later in this
 -- schema, so this can't quietly reappear as new tables get added.
 alter default privileges in schema public grant select, insert, update, delete on tables to anon, authenticated, service_role;
+
+-- ============================================================
+-- Storage — payment screenshots (added for C7)
+-- ============================================================
+-- Private bucket, not public: a payment screenshot can contain real
+-- financial/personal information (bank transfer confirmations, phone
+-- numbers) — the same principle AGENTS.md applies to `salaries` applies
+-- here. No getPublicUrl(), ever. Every view goes through a short-lived
+-- signed URL generated on demand for an authenticated admin (see
+-- createSignedScreenshotUrl in src/lib/paymentReview.ts).
+--
+-- storage.objects ships with RLS already enabled by default on every
+-- Supabase project and zero policies (default-deny) — unlike the base
+-- table grants gap above, there's nothing to separately grant here, only
+-- the policy itself.
+insert into storage.buckets (id, name, public)
+values ('payment-screenshots', 'payment-screenshots', false)
+on conflict (id) do nothing;
+
+create policy "admin reads payment screenshots"
+on storage.objects for select
+to authenticated
+using (
+  bucket_id = 'payment-screenshots'
+  and my_role() = 'admin'
+);
+
+-- NOTE: deliberately no student-facing insert policy yet. That's D5's job
+-- (Submit Payment screen) — the upload path/naming convention a student's
+-- own policy would check against (e.g. scoping by a folder prefix matching
+-- her own id) should be decided alongside that screen, not guessed at here
+-- ahead of it. Do not add a student policy to this bucket without designing
+-- that upload flow first.
 
 -- ============================================================
 -- End of script.

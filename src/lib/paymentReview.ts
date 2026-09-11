@@ -105,3 +105,23 @@ export async function createSignedScreenshotUrl(path: string): Promise<string | 
   }
   return data?.signedUrl ?? null
 }
+
+// ============================================================
+// C8 — approve/reject. Plain direct writes, no Edge Function: unlike C3's
+// account creation, this never touches the Auth Admin API — updating
+// `payments.status` is something the admin's own session can already do,
+// since RLS already grants admin `for all` on this table. RLS is the real
+// gate either way, so routing this through a function would add nothing.
+// ============================================================
+
+export async function reconcilePayment(
+  paymentId: string,
+  status: 'confirmed' | 'rejected',
+  reconciledBy: string,
+): Promise<void> {
+  const { error } = await supabase
+    .from('payments')
+    .update({ status, reconciled_by: reconciledBy, reconciled_at: new Date().toISOString() })
+    .eq('id', paymentId)
+  if (error) throw error
+}

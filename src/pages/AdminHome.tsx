@@ -21,6 +21,9 @@ export function AdminHome() {
         <Link to="/admin/payment-review" style={{ color: '#441967', textDecoration: 'underline' }}>
           مراجعة طلبات الدفع →
         </Link>
+        <Link to="/admin/students" style={{ color: '#441967', textDecoration: 'underline' }}>
+          إدارة الطالبات →
+        </Link>
       </div>
     </>
   )

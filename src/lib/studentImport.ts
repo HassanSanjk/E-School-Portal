@@ -8,6 +8,7 @@
 // C3 is where new/changed rows actually get committed.
 import type { ParsedSheet } from './excelImport'
 import { supabase } from './supabase'
+import type { ExistingStudent } from './students'
 
 export type StudentField =
   | 'student_number'
@@ -117,45 +118,6 @@ export function applyMapping(sheet: ParsedSheet, mapping: ColumnMapping): Mapped
       if (header) values[field.key] = cell(row[header])
     }
     return { rowNumber: i + 1, values }
-  })
-}
-
-export interface ExistingStudent {
-  id: string
-  studentNumber: string
-  loginId: string
-  fullName: string
-  gradeLevel: string
-  classSection: string
-  guardianName: string
-  guardianPhone: string
-}
-
-/** Reads every current student for comparison. Admin-only RLS covers this —
- * no service_role needed, this runs as the signed-in admin's own client. */
-export async function fetchExistingStudents(): Promise<ExistingStudent[]> {
-  const { data, error } = await supabase
-    .from('students')
-    .select(
-      'id, student_number, grade_level, class_section, guardian_name, guardian_phone, profiles(full_name, login_id)',
-    )
-
-  if (error) throw error
-
-  return (data ?? []).map((row) => {
-    // Nested embed comes back as an object (1:1 FK) but supabase-js types
-    // it defensively as possibly-array; normalize either shape.
-    const profile = Array.isArray(row.profiles) ? row.profiles[0] : row.profiles
-    return {
-      id: row.id,
-      studentNumber: row.student_number ?? '',
-      loginId: profile?.login_id ?? '',
-      fullName: profile?.full_name ?? '',
-      gradeLevel: row.grade_level ?? '',
-      classSection: row.class_section ?? '',
-      guardianName: row.guardian_name ?? '',
-      guardianPhone: row.guardian_phone ?? '',
-    }
   })
 }
 

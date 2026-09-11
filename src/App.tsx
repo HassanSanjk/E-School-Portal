@@ -12,6 +12,7 @@ import { AdminExcelImport } from './pages/AdminExcelImport'
 import { AdminFeeSchedule } from './pages/AdminFeeSchedule'
 import { AdminFeesDueSoon } from './pages/AdminFeesDueSoon'
 import { AdminPaymentReview } from './pages/AdminPaymentReview'
+import { AdminStudentManagement } from './pages/AdminStudentManagement'
 
 function App() {
   const { isInitializing } = useAuth()
@@ -43,6 +44,7 @@ function App() {
         <Route path="/admin/fee-schedule" element={<AdminFeeSchedule />} />
         <Route path="/admin/fees-due-soon" element={<AdminFeesDueSoon />} />
         <Route path="/admin/payment-review" element={<AdminPaymentReview />} />
+        <Route path="/admin/students" element={<AdminStudentManagement />} />
       </Route>
 
       <Route path="/" element={<RoleRedirect />} />

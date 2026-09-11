@@ -7,7 +7,7 @@ import { Field, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { AlertTriangle, Search, Wallet } from '@/components/icons'
 import { num } from '@/lib/format'
-import { fetchExistingStudents, type ExistingStudent } from '@/lib/studentImport'
+import { fetchExistingStudents, type ExistingStudent } from '@/lib/students'
 import { fetchFeeKeysForYear, createFees, type ExistingFeeKey, type NewFeeInput } from '@/lib/feeSchedule'
 
 // C4 — fee schedule setup. No dedicated screen exists for this in

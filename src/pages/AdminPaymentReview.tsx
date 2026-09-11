@@ -1,15 +1,25 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router'
 import { Card, CardContent } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Input } from '@/components/ui/input'
 import { AlertTriangle, Search, X, ImageOff } from '@/components/icons'
 import { longDate, currency, PAYMENT_STATUS_LABEL, type PaymentStatus } from '@/lib/format'
-import { fetchPayments, createSignedScreenshotUrl, type PaymentRow } from '@/lib/paymentReview'
+import { useAuth } from '@/hooks/useAuth'
+import {
+  fetchPayments,
+  createSignedScreenshotUrl,
+  reconcilePayment,
+  type PaymentRow,
+} from '@/lib/paymentReview'
 
-// C7 — payment review queue: list + full-size screenshot view only.
-// Approve/reject is C8's job, deliberately not built here.
+// C7 (list + full-size view) + C8 (approve/reject). Approve is one click —
+// it's the common, expected case for a correctly-submitted payment. Reject
+// asks for a confirm first: there's no dedicated "reason" field in the
+// schema and no undo in this UI, so it's the action most worth a pause.
 type StatusFilter = 'all' | PaymentStatus
+type ActionState = 'idle' | 'confirmingReject' | 'submitting'
 
 const STATUS_TONE: Record<PaymentStatus, string> = {
   pending: 'bg-due-bg text-due',
@@ -18,6 +28,9 @@ const STATUS_TONE: Record<PaymentStatus, string> = {
 }
 
 export function AdminPaymentReview() {
+  const { session } = useAuth()
+  const adminId = session?.user.id
+
   const [payments, setPayments] = useState<PaymentRow[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
@@ -26,6 +39,55 @@ export function AdminPaymentReview() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('pending')
   const [search, setSearch] = useState('')
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null)
+
+  const [actionState, setActionState] = useState<Record<string, ActionState>>({})
+  const [actionError, setActionError] = useState<Record<string, string | null>>({})
+
+  function setOneActionState(id: string, state: ActionState) {
+    setActionState((prev) => ({ ...prev, [id]: state }))
+  }
+
+  async function handleApprove(id: string) {
+    if (!adminId) {
+      setActionError((prev) => ({ ...prev, [id]: 'تعذّر تحديد هوية المسؤول الحالي — أعيدي تسجيل الدخول.' }))
+      return
+    }
+    setOneActionState(id, 'submitting')
+    setActionError((prev) => ({ ...prev, [id]: null }))
+    try {
+      await reconcilePayment(id, 'confirmed', adminId)
+      const reconciledAt = new Date().toISOString()
+      setPayments((prev) => prev.map((p) => (p.id === id ? { ...p, status: 'confirmed', reconciledAt } : p)))
+      setOneActionState(id, 'idle')
+    } catch (e) {
+      setActionError((prev) => ({
+        ...prev,
+        [id]: e instanceof Error ? e.message : 'تعذّر تأكيد الدفع.',
+      }))
+      setOneActionState(id, 'idle')
+    }
+  }
+
+  async function handleRejectConfirm(id: string) {
+    if (!adminId) {
+      setActionError((prev) => ({ ...prev, [id]: 'تعذّر تحديد هوية المسؤول الحالي — أعيدي تسجيل الدخول.' }))
+      return
+    }
+    setOneActionState(id, 'submitting')
+    setActionError((prev) => ({ ...prev, [id]: null }))
+    try {
+      await reconcilePayment(id, 'rejected', adminId)
+      const reconciledAt = new Date().toISOString()
+      setPayments((prev) => prev.map((p) => (p.id === id ? { ...p, status: 'rejected', reconciledAt } : p)))
+      setOneActionState(id, 'idle')
+    } catch (e) {
+      setActionError((prev) => ({
+        ...prev,
+        [id]: e instanceof Error ? e.message : 'تعذّر رفض الدفع.',
+      }))
+      setOneActionState(id, 'idle')
+    }
+  }
 
   useEffect(() => {
     let cancelled = false
@@ -195,6 +257,68 @@ export function AdminPaymentReview() {
                             أُرسلت {longDate(new Date(p.submittedAt))}
                           </span>
                         </div>
+                        {p.status !== 'pending' && p.reconciledAt && (
+                          <div className="text-xs text-muted-foreground">
+                            تمت المراجعة {longDate(new Date(p.reconciledAt))}
+                          </div>
+                        )}
+
+                        {p.status === 'pending' && (
+                          <div className="pt-1 space-y-1.5">
+                            {actionState[p.id] === 'confirmingReject' ? (
+                              <div className="space-y-1.5">
+                                <p className="text-xs text-muted-foreground">هل تريدين رفض هذا الطلب؟</p>
+                                <div className="flex gap-2">
+                                  <Button
+                                    type="button"
+                                    variant="destructive"
+                                    size="sm"
+                                    className="flex-1"
+                                    onClick={() => handleRejectConfirm(p.id)}
+                                    disabled={actionState[p.id] === 'submitting'}
+                                  >
+                                    {actionState[p.id] === 'submitting' ? '...' : 'نعم، ارفضي'}
+                                  </Button>
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    className="flex-1"
+                                    onClick={() => setOneActionState(p.id, 'idle')}
+                                    disabled={actionState[p.id] === 'submitting'}
+                                  >
+                                    تراجع
+                                  </Button>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="flex gap-2">
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  className="flex-1"
+                                  onClick={() => handleApprove(p.id)}
+                                  disabled={actionState[p.id] === 'submitting'}
+                                >
+                                  {actionState[p.id] === 'submitting' ? '...' : 'قبول'}
+                                </Button>
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  className="flex-1"
+                                  onClick={() => setOneActionState(p.id, 'confirmingReject')}
+                                  disabled={actionState[p.id] === 'submitting'}
+                                >
+                                  رفض
+                                </Button>
+                              </div>
+                            )}
+                            {actionError[p.id] && (
+                              <p className="text-xs text-destructive">{actionError[p.id]}</p>
+                            )}
+                          </div>
+                        )}
                       </CardContent>
                     </Card>
                   )
