@@ -24,6 +24,9 @@ export function AdminHome() {
         <Link to="/admin/students" style={{ color: '#441967', textDecoration: 'underline' }}>
           إدارة الطالبات →
         </Link>
+        <Link to="/admin/teachers" style={{ color: '#441967', textDecoration: 'underline' }}>
+          إدارة المعلمات →
+        </Link>
       </div>
     </>
   )

@@ -1,16 +1,26 @@
 // admin-bulk-import-students
 //
-// Admin-only. C3's commit step for *new* students found by the Excel
-// import (C1/C2). A client can never create another user's auth account
-// directly — Supabase's Admin API (auth.admin.createUser) only works with
-// an elevated key — so this has to be server-side, the same reason
+// Admin-only. Creates a brand-new login account (auth.users + profiles +
+// a role table row) for either a student or a teacher. Originally built
+// for C3's Excel-import commit step (student rows only) — C11 (teacher
+// management) needed the exact same account-creation machinery (a real
+// auth account, a server-generated PIN, the same rollback-on-partial-
+// failure guarantee) for teachers, so this was generalized with a `role`
+// field rather than duplicating that logic into a second function. The
+// name undersells its current scope a bit; kept as-is rather than
+// renaming, since renaming this folder would deploy a *new* function
+// under the new name and leave this one orphaned on the live project —
+// a bigger, riskier operation than a name that's slightly behind reality.
+// A client can never create another user's auth account directly —
+// Supabase's Admin API (auth.admin.createUser) only works with an
+// elevated key — so this has to be server-side, the same reason
 // admin-reset-pin exists.
 //
-// "Changed" rows (existing students, just updated fields) do NOT go
-// through this function — RLS already lets an authenticated admin update
-// `students`/`profiles` directly, so the client does that itself. This
-// function exists only for the part a client fundamentally cannot do:
-// minting a new login.
+// "Changed" rows (an existing student or teacher, just updated fields) do
+// NOT go through this function — RLS already lets an authenticated admin
+// update `students`/`teachers`/`profiles` directly, so the client does
+// that itself. This function exists only for the part a client
+// fundamentally cannot do: minting a new login.
 //
 // Auth model — identical two-layer pattern to admin-reset-pin:
 //   1. Platform-level: verify_jwt = true rejects any request with no valid
@@ -23,10 +33,10 @@
 // Admin API calls on this project as of Sep 2026.
 //
 // Defense in depth, on purpose: this function does NOT trust the client's
-// diff. It independently re-checks student_number/login_id uniqueness
-// against the live database before creating anything — a stale preview
-// (opened a while ago, or a second admin importing concurrently) should
-// never be able to create a duplicate.
+// diff or form state. It independently re-checks login_id (both roles)
+// and student_number (students only) uniqueness against the live database
+// before creating anything — a stale preview or a second admin acting
+// concurrently should never be able to create a duplicate.
 import { createClient } from 'npm:@supabase/supabase-js@2'
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
@@ -54,13 +64,17 @@ function json(body: unknown, status = 200) {
 }
 
 interface IncomingRow {
-  studentNumber?: string
+  role?: 'student' | 'teacher'
   fullName?: string
   loginId?: string
+  // student-only
+  studentNumber?: string
   gradeLevel?: string
   classSection?: string
   guardianName?: string
   guardianPhone?: string
+  // teacher-only
+  subjectSpecialty?: string
 }
 
 interface RowResult {
@@ -161,15 +175,22 @@ Deno.serve(async (req) => {
     // keeps behavior predictable and avoids hammering the Auth Admin API
     // with concurrent createUser calls.
     for (const raw of rows) {
-      const studentNumber = clean(raw.studentNumber)
+      const role = raw.role === 'teacher' ? 'teacher' : 'student'
       const fullName = clean(raw.fullName)
       const loginId = clean(raw.loginId)
+
+      // Student-only fields
+      const studentNumber = clean(raw.studentNumber)
       const gradeLevel = clean(raw.gradeLevel)
       const classSection = clean(raw.classSection)
       const guardianName = clean(raw.guardianName)
       const guardianPhone = clean(raw.guardianPhone)
+      // Teacher-only field
+      const subjectSpecialty = clean(raw.subjectSpecialty)
 
-      if (!studentNumber || !fullName || !loginId || !gradeLevel || !classSection) {
+      const displayId = role === 'student' ? studentNumber : loginId
+
+      if (role === 'student' && (!studentNumber || !fullName || !loginId || !gradeLevel || !classSection)) {
         results.push({
           studentNumber: studentNumber || '(بلا رقم)',
           fullName,
@@ -178,10 +199,19 @@ Deno.serve(async (req) => {
         })
         continue
       }
+      if (role === 'teacher' && (!fullName || !loginId)) {
+        results.push({
+          studentNumber: '',
+          fullName,
+          status: 'failed',
+          error: 'حقل مطلوب مفقود (الاسم أو رقم الدخول).',
+        })
+        continue
+      }
 
       // Re-check against live state, not the client's (possibly stale)
-      // diff — see file header.
-      if (existingStudentNumbers.has(studentNumber)) {
+      // form/diff — see file header.
+      if (role === 'student' && existingStudentNumbers.has(studentNumber)) {
         results.push({
           studentNumber,
           fullName,
@@ -192,7 +222,7 @@ Deno.serve(async (req) => {
       }
       if (existingLoginIds.has(loginId)) {
         results.push({
-          studentNumber,
+          studentNumber: role === 'student' ? studentNumber : '',
           fullName,
           status: 'failed',
           error: `رقم الدخول "${loginId}" مستخدم بالفعل لحساب آخر.`,
@@ -208,9 +238,9 @@ Deno.serve(async (req) => {
       })
 
       if (createError || !created?.user) {
-        console.error('admin-bulk-import-students: createUser failed', studentNumber, createError)
+        console.error('admin-bulk-import-students: createUser failed', role, displayId, createError)
         results.push({
-          studentNumber,
+          studentNumber: role === 'student' ? studentNumber : '',
           fullName,
           status: 'failed',
           error: createError?.message ?? 'تعذّر إنشاء الحساب.',
@@ -222,53 +252,66 @@ Deno.serve(async (req) => {
 
       const { error: profileError } = await adminClient
         .from('profiles')
-        .insert({ id: newId, login_id: loginId, role: 'student', full_name: fullName })
+        .insert({ id: newId, login_id: loginId, role, full_name: fullName })
 
-      const { error: studentError } = profileError
+      const { error: roleTableError } = profileError
         ? { error: null } // don't attempt the second insert if the first already failed
-        : await adminClient.from('students').insert({
-            id: newId,
-            student_number: studentNumber,
-            grade_level: gradeLevel,
-            class_section: classSection,
-            guardian_name: guardianName || null,
-            guardian_phone: guardianPhone || null,
-          })
+        : role === 'student'
+          ? await adminClient.from('students').insert({
+              id: newId,
+              student_number: studentNumber,
+              grade_level: gradeLevel,
+              class_section: classSection,
+              guardian_name: guardianName || null,
+              guardian_phone: guardianPhone || null,
+            })
+          : await adminClient.from('teachers').insert({
+              id: newId,
+              subject_specialty: subjectSpecialty || null,
+            })
 
-      if (profileError || studentError) {
+      if (profileError || roleTableError) {
         // Compensating rollback: deleting the auth user cascades to
-        // profiles/students automatically (both FKs are `on delete
-        // cascade`), so this alone fully undoes the partial write. Without
-        // this, a failed row would leave an orphaned auth account
+        // profiles/students/teachers automatically (every FK here is `on
+        // delete cascade`), so this alone fully undoes the partial write.
+        // Without this, a failed row would leave an orphaned auth account
         // permanently squatting on that login_id, silently blocking every
-        // future retry for that student.
+        // future retry.
         const { error: rollbackError } = await adminClient.auth.admin.deleteUser(newId)
         if (rollbackError) {
           console.error(
             'admin-bulk-import-students: ROLLBACK FAILED, orphaned auth user',
             newId,
-            studentNumber,
+            role,
+            displayId,
             rollbackError,
           )
         }
         console.error(
           'admin-bulk-import-students: row insert failed after account creation',
-          studentNumber,
-          profileError ?? studentError,
+          role,
+          displayId,
+          profileError ?? roleTableError,
         )
         results.push({
-          studentNumber,
+          studentNumber: role === 'student' ? studentNumber : '',
           fullName,
           status: 'failed',
-          error: (profileError ?? studentError)?.message ?? 'فشل حفظ بيانات الطالبة بعد إنشاء الحساب.',
+          error: (profileError ?? roleTableError)?.message ?? 'فشل حفظ البيانات بعد إنشاء الحساب.',
         })
         existingLoginIds.add(loginId) // just in case rollback failed — don't retry-collide in this same batch
         continue
       }
 
-      existingStudentNumbers.add(studentNumber)
+      if (role === 'student') existingStudentNumbers.add(studentNumber)
       existingLoginIds.add(loginId)
-      results.push({ studentNumber, fullName, status: 'created', loginId, pin })
+      results.push({
+        studentNumber: role === 'student' ? studentNumber : '',
+        fullName,
+        status: 'created',
+        loginId,
+        pin,
+      })
     }
 
     return json({ results })
