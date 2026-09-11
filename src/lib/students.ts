@@ -43,3 +43,52 @@ export async function fetchExistingStudents(): Promise<ExistingStudent[]> {
     }
   })
 }
+
+// ============================================================
+// C10 — edit an existing student. (Creating a new one reuses C3's
+// commitNewStudents from studentImport.ts — see AdminStudentForm.tsx —
+// since a manual "add one student" and an Excel-imported "new" row need
+// exactly the same account-creation machinery, not a second copy of it.)
+// ============================================================
+
+export interface StudentFormFields {
+  fullName: string
+  studentNumber: string
+  loginId: string
+  gradeLevel: string
+  classSection: string
+  guardianName: string
+  guardianPhone: string
+}
+
+/** Postgres's unique-violation code, surfaced as a readable Arabic message
+ * instead of a raw constraint-name error — this is genuinely the safer
+ * way to catch a login_id/student_number collision anyway (checking first
+ * and writing second would leave a race window; the constraint is the
+ * real, atomic check). */
+function friendlyStudentError(error: { code?: string; message: string }): Error {
+  if (error.code === '23505') {
+    return new Error('رقم الدخول أو الرقم الأكاديمي مستخدم بالفعل لطالبة أخرى.')
+  }
+  return new Error(error.message)
+}
+
+export async function updateStudentRecord(id: string, fields: StudentFormFields): Promise<void> {
+  const { error: profileError } = await supabase
+    .from('profiles')
+    .update({ full_name: fields.fullName, login_id: fields.loginId })
+    .eq('id', id)
+  if (profileError) throw friendlyStudentError(profileError)
+
+  const { error: studentError } = await supabase
+    .from('students')
+    .update({
+      student_number: fields.studentNumber,
+      grade_level: fields.gradeLevel,
+      class_section: fields.classSection,
+      guardian_name: fields.guardianName || null,
+      guardian_phone: fields.guardianPhone || null,
+    })
+    .eq('id', id)
+  if (studentError) throw friendlyStudentError(studentError)
+}

@@ -13,6 +13,7 @@ import { AdminFeeSchedule } from './pages/AdminFeeSchedule'
 import { AdminFeesDueSoon } from './pages/AdminFeesDueSoon'
 import { AdminPaymentReview } from './pages/AdminPaymentReview'
 import { AdminStudentManagement } from './pages/AdminStudentManagement'
+import { AdminStudentForm } from './pages/AdminStudentForm'
 
 function App() {
   const { isInitializing } = useAuth()
@@ -45,6 +46,8 @@ function App() {
         <Route path="/admin/fees-due-soon" element={<AdminFeesDueSoon />} />
         <Route path="/admin/payment-review" element={<AdminPaymentReview />} />
         <Route path="/admin/students" element={<AdminStudentManagement />} />
+        <Route path="/admin/students/new" element={<AdminStudentForm />} />
+        <Route path="/admin/students/:id/edit" element={<AdminStudentForm />} />
       </Route>
 
       <Route path="/" element={<RoleRedirect />} />

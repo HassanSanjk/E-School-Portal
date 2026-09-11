@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router'
+import { Link, useNavigate } from 'react-router'
 import { Card, CardContent } from '@/components/ui/card'
+import { buttonVariants } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Input } from '@/components/ui/input'
 import { AlertTriangle, Search } from '@/components/icons'
@@ -13,6 +14,7 @@ import { fetchExistingStudents, type ExistingStudent } from '@/lib/students'
 // treatment as the other data-heavy admin screens (C5, C7), per
 // figma_make_prompt.md's guidance for admin views specifically.
 export function AdminStudentManagement() {
+  const navigate = useNavigate()
   const [students, setStudents] = useState<ExistingStudent[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
@@ -56,14 +58,19 @@ export function AdminStudentManagement() {
   return (
     <div className="min-h-dvh bg-background p-5">
       <div className="max-w-5xl w-full mx-auto space-y-4">
-        <div>
-          <Link to="/admin" className="text-sm text-primary-soft hover:underline">
-            ← لوحة الإدارة
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <Link to="/admin" className="text-sm text-primary-soft hover:underline">
+              ← لوحة الإدارة
+            </Link>
+            <h1 className="font-display text-xl font-bold mt-2">إدارة الطالبات</h1>
+            <p className="text-sm text-muted-foreground mt-1">
+              {students.length > 0 && `إجمالي عدد الطالبات: ${num(students.length)}`}
+            </p>
+          </div>
+          <Link to="/admin/students/new" className={buttonVariants({ size: 'sm' })}>
+            + إضافة طالبة
           </Link>
-          <h1 className="font-display text-xl font-bold mt-2">إدارة الطالبات</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            {students.length > 0 && `إجمالي عدد الطالبات: ${num(students.length)}`}
-          </p>
         </div>
 
         {loadError && (
@@ -119,25 +126,27 @@ export function AdminStudentManagement() {
                 {/* Mobile: card list */}
                 <div className="sm:hidden space-y-2">
                   {visibleStudents.map((s) => (
-                    <Card key={s.id} className="p-3">
-                      <CardContent className="p-0 space-y-1">
-                        <div className="font-medium text-sm">{s.fullName}</div>
-                        <div className="text-xs text-muted-foreground">
-                          {s.studentNumber}
-                          {s.gradeLevel ? ` · ${s.gradeLevel}${s.classSection ? ` ${s.classSection}` : ''}` : ''}
-                        </div>
-                        <div className="text-xs text-muted-foreground" dir="ltr">
-                          {s.loginId}
-                        </div>
-                        {(s.guardianName || s.guardianPhone) && (
-                          <div className="text-xs text-muted-foreground pt-1 border-t border-border mt-1">
-                            {s.guardianName}
-                            {s.guardianName && s.guardianPhone ? ' — ' : ''}
-                            <span dir="ltr">{s.guardianPhone}</span>
+                    <Link key={s.id} to={`/admin/students/${s.id}/edit`} className="block">
+                      <Card className="p-3 hover:bg-muted/50 transition-colors">
+                        <CardContent className="p-0 space-y-1">
+                          <div className="font-medium text-sm">{s.fullName}</div>
+                          <div className="text-xs text-muted-foreground">
+                            {s.studentNumber}
+                            {s.gradeLevel ? ` · ${s.gradeLevel}${s.classSection ? ` ${s.classSection}` : ''}` : ''}
                           </div>
-                        )}
-                      </CardContent>
-                    </Card>
+                          <div className="text-xs text-muted-foreground" dir="ltr">
+                            {s.loginId}
+                          </div>
+                          {(s.guardianName || s.guardianPhone) && (
+                            <div className="text-xs text-muted-foreground pt-1 border-t border-border mt-1">
+                              {s.guardianName}
+                              {s.guardianName && s.guardianPhone ? ' — ' : ''}
+                              <span dir="ltr">{s.guardianPhone}</span>
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    </Link>
                   ))}
                 </div>
 
@@ -162,7 +171,16 @@ export function AdminStudentManagement() {
                       </thead>
                       <tbody>
                         {visibleStudents.map((s) => (
-                          <tr key={s.id} className="odd:bg-card even:bg-muted/30">
+                          <tr
+                            key={s.id}
+                            role="button"
+                            tabIndex={0}
+                            onClick={() => navigate(`/admin/students/${s.id}/edit`)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' || e.key === ' ') navigate(`/admin/students/${s.id}/edit`)
+                            }}
+                            className="odd:bg-card even:bg-muted/30 cursor-pointer hover:bg-muted/60"
+                          >
                             <td className="px-3 py-2 border-b border-border whitespace-nowrap font-medium">
                               {s.fullName}
                             </td>
