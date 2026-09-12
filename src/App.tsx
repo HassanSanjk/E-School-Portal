@@ -16,6 +16,8 @@ import { AdminStudentManagement } from './pages/AdminStudentManagement'
 import { AdminStudentForm } from './pages/AdminStudentForm'
 import { AdminTeacherManagement } from './pages/AdminTeacherManagement'
 import { AdminTeacherForm } from './pages/AdminTeacherForm'
+import { AdminMarksEntry } from './pages/AdminMarksEntry'
+import { AdminTimetableEntry } from './pages/AdminTimetableEntry'
 
 function App() {
   const { isInitializing } = useAuth()
@@ -53,6 +55,8 @@ function App() {
         <Route path="/admin/teachers" element={<AdminTeacherManagement />} />
         <Route path="/admin/teachers/new" element={<AdminTeacherForm />} />
         <Route path="/admin/teachers/:id/edit" element={<AdminTeacherForm />} />
+        <Route path="/admin/marks-entry" element={<AdminMarksEntry />} />
+        <Route path="/admin/timetable-entry" element={<AdminTimetableEntry />} />
       </Route>
 
       <Route path="/" element={<RoleRedirect />} />

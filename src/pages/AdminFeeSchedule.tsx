@@ -9,6 +9,7 @@ import { AlertTriangle, Search, Wallet } from '@/components/icons'
 import { num } from '@/lib/format'
 import { fetchExistingStudents, type ExistingStudent } from '@/lib/students'
 import { fetchFeeKeysForYear, createFees, type ExistingFeeKey, type NewFeeInput } from '@/lib/feeSchedule'
+import { ACADEMIC_YEAR_PATTERN } from '@/lib/constants'
 
 // C4 — fee schedule setup. No dedicated screen exists for this in
 // figma_make_prompt.md (only "Fees Due Soon", C5, is spec'd), so this is
@@ -17,7 +18,6 @@ import { fetchFeeKeysForYear, createFees, type ExistingFeeKey, type NewFeeInput 
 // student at a time would be needless friction. Tuition is annual, not
 // per-term (SCHEMA_AND_ACCESS_MATRIX.md §1): one row per student per
 // academic_year, optionally split by installment_label.
-const ACADEMIC_YEAR_PATTERN = /^\d{4}-\d{4}$/
 
 export function AdminFeeSchedule() {
   const [students, setStudents] = useState<ExistingStudent[]>([])

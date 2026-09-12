@@ -27,6 +27,12 @@ export function AdminHome() {
         <Link to="/admin/teachers" style={{ color: '#441967', textDecoration: 'underline' }}>
           إدارة المعلمات →
         </Link>
+        <Link to="/admin/marks-entry" style={{ color: '#441967', textDecoration: 'underline' }}>
+          إدخال الدرجات →
+        </Link>
+        <Link to="/admin/timetable-entry" style={{ color: '#441967', textDecoration: 'underline' }}>
+          إدخال الجدول الدراسي →
+        </Link>
       </div>
     </>
   )
