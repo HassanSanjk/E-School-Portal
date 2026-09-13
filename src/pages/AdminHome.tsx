@@ -33,6 +33,9 @@ export function AdminHome() {
         <Link to="/admin/timetable-entry" style={{ color: '#441967', textDecoration: 'underline' }}>
           إدخال الجدول الدراسي →
         </Link>
+        <Link to="/admin/salary-entry" style={{ color: '#441967', textDecoration: 'underline' }}>
+          إدخال الراتب →
+        </Link>
       </div>
     </>
   )
