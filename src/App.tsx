@@ -5,6 +5,7 @@ import { RoleRedirect } from './routes/RoleRedirect'
 import { LoginPage } from './pages/LoginPage'
 import { SplashScreen } from './pages/SplashScreen'
 import { StudentHome } from './pages/StudentHome'
+import { StudentMarks } from './pages/StudentMarks'
 import { TeacherHome } from './pages/TeacherHome'
 import { AdminHome } from './pages/AdminHome'
 import { AdminPinReset } from './pages/AdminPinReset'
@@ -38,6 +39,7 @@ function App() {
 
       <Route element={<ProtectedRoute allowedRoles={['student']} />}>
         <Route path="/student" element={<StudentHome />} />
+        <Route path="/student/marks" element={<StudentMarks />} />
       </Route>
 
       <Route element={<ProtectedRoute allowedRoles={['teacher']} />}>

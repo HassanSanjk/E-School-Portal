@@ -266,6 +266,7 @@ insert into storage.buckets (id, name, public)
 values ('payment-screenshots', 'payment-screenshots', false)
 on conflict (id) do nothing;
 
+drop policy if exists "admin reads payment screenshots" on storage.objects;
 create policy "admin reads payment screenshots"
 on storage.objects for select
 to authenticated
@@ -280,6 +281,33 @@ using (
 -- her own id) should be decided alongside that screen, not guessed at here
 -- ahead of it. Do not add a student policy to this bucket without designing
 -- that upload flow first.
+
+-- ============================================================
+-- Storage — tutorial papers (added for C15)
+-- ============================================================
+-- Also private, unlike payment-screenshots' access pattern though: this
+-- is ordinary study material, openly readable by any authenticated user
+-- (mirrors the `tutorial_papers` table's own "authenticated users read"
+-- policy), not sensitive personal data restricted to admin. Kept private
+-- rather than public anyway — every other piece of data access in this
+-- app requires authentication, and a public bucket would be the one
+-- silent exception to that for no real benefit.
+insert into storage.buckets (id, name, public)
+values ('tutorial-papers', 'tutorial-papers', false)
+on conflict (id) do nothing;
+
+drop policy if exists "authenticated users read tutorial papers" on storage.objects;
+create policy "authenticated users read tutorial papers"
+on storage.objects for select
+to authenticated
+using (bucket_id = 'tutorial-papers');
+
+drop policy if exists "admin manages tutorial papers" on storage.objects;
+create policy "admin manages tutorial papers"
+on storage.objects for all
+to authenticated
+using (bucket_id = 'tutorial-papers' and my_role() = 'admin')
+with check (bucket_id = 'tutorial-papers' and my_role() = 'admin');
 
 -- ============================================================
 -- End of script.

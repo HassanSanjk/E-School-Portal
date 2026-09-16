@@ -1,6 +1,4 @@
-// Marks entry — C12. Admin-only (teacher access to marks is still an open
-// question per SCHEMA_AND_ACCESS_MATRIX.md — this screen doesn't touch
-// that at all, it's the admin-side entry form the matrix already allows).
+// Marks — C12 (admin entry) + D2 (student read).
 import { supabase } from './supabase'
 
 /** Existing assessment_label values already used for this exact
@@ -61,4 +59,48 @@ export async function createMark(input: NewMarkInput): Promise<void> {
     entered_by: input.enteredBy,
   })
   if (error) throw error
+}
+
+// ============================================================
+// D2 — Student Marks screen. Admin-only in C12 was about *writing*;
+// reading her own marks back is the student's own RLS policy ("student
+// reads own marks", student_id = auth.uid()) — this doesn't touch the
+// still-open teacher-access-to-marks question at all.
+// ============================================================
+
+export interface MarksRow {
+  id: string
+  subjectId: string
+  subjectName: string
+  academicYear: string
+  assessmentLabel: string
+  score: number
+  maxScore: number
+}
+
+/** Every mark ever recorded for one student, across every subject and
+ * year — the screen itself groups/filters this client-side (by academic
+ * year, then by subject) rather than this function taking those as
+ * params, since the whole set is small per student (a handful of subjects
+ * × 2-3 assessments × however many years) and the screen needs to know
+ * which years exist at all before it can offer a year filter. */
+export async function fetchMyMarks(studentId: string): Promise<MarksRow[]> {
+  const { data, error } = await supabase
+    .from('marks')
+    .select('id, subject_id, academic_year, assessment_label, score, max_score, subjects(name)')
+    .eq('student_id', studentId)
+  if (error) throw error
+
+  return (data ?? []).map((m) => {
+    const subject = Array.isArray(m.subjects) ? m.subjects[0] : m.subjects
+    return {
+      id: m.id,
+      subjectId: m.subject_id,
+      subjectName: subject?.name ?? '',
+      academicYear: m.academic_year,
+      assessmentLabel: m.assessment_label,
+      score: m.score,
+      maxScore: m.max_score,
+    }
+  })
 }
