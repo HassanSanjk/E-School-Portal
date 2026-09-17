@@ -67,6 +67,23 @@ export async function updateTeacherRecord(id: string, fields: TeacherFormFields)
 }
 
 // ============================================================
+// D7 — Teacher Dashboard. Her name already comes from useAuth()'s own
+// profile; this is only for the one extra field (subject_specialty) that
+// lives on `teachers` instead of `profiles`.
+// ============================================================
+
+export interface MyTeacherInfo {
+  subjectSpecialty: string
+}
+
+/** RLS ("teacher reads own row", id = auth.uid()) scopes this to herself. */
+export async function fetchMyTeacherInfo(teacherId: string): Promise<MyTeacherInfo> {
+  const { data, error } = await supabase.from('teachers').select('subject_specialty').eq('id', teacherId).single()
+  if (error) throw error
+  return { subjectSpecialty: data.subject_specialty ?? '' }
+}
+
+// ============================================================
 // New teacher creation reuses the generalized admin-bulk-import-students
 // Edge Function (originally C3's student-only import commit, extended for
 // C11 with a `role` field) rather than a second copy of the same

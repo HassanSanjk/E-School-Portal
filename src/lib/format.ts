@@ -32,6 +32,15 @@ export function longDate(d: Date): string {
   return `${ltr(d.getDate())} ${ARABIC_MONTHS[d.getMonth()]} ${ltr(d.getFullYear())}`;
 }
 
+/** Month + year only, no day — for a `date` column where the day is
+ * always the 1st and meaningless to show (e.g. a salary's `month`).
+ * Deliberately not `toLocaleDateString('ar', ...)`: that renders Eastern
+ * Arabic-Indic digits by default, which is exactly the Western-numerals
+ * rule this whole file exists to enforce. */
+export function monthYear(d: Date): string {
+  return `${ARABIC_MONTHS[d.getMonth()]} ${ltr(d.getFullYear())}`;
+}
+
 /** Percentage/score out of a max, digits LTR. */
 export function score(value: number, max: number): string {
   return ltr(`${value} / ${max}`);

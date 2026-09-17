@@ -6,7 +6,13 @@ import { LoginPage } from './pages/LoginPage'
 import { SplashScreen } from './pages/SplashScreen'
 import { StudentHome } from './pages/StudentHome'
 import { StudentMarks } from './pages/StudentMarks'
+import { StudentTutorialPapers } from './pages/StudentTutorialPapers'
+import { StudentFees } from './pages/StudentFees'
+import { StudentSubmitPayment } from './pages/StudentSubmitPayment'
+import { StudentPaymentHistory } from './pages/StudentPaymentHistory'
 import { TeacherHome } from './pages/TeacherHome'
+import { TeacherTimetable } from './pages/TeacherTimetable'
+import { TeacherSalary } from './pages/TeacherSalary'
 import { AdminHome } from './pages/AdminHome'
 import { AdminPinReset } from './pages/AdminPinReset'
 import { AdminExcelImport } from './pages/AdminExcelImport'
@@ -40,10 +46,16 @@ function App() {
       <Route element={<ProtectedRoute allowedRoles={['student']} />}>
         <Route path="/student" element={<StudentHome />} />
         <Route path="/student/marks" element={<StudentMarks />} />
+        <Route path="/student/papers" element={<StudentTutorialPapers />} />
+        <Route path="/student/fees" element={<StudentFees />} />
+        <Route path="/student/pay" element={<StudentSubmitPayment />} />
+        <Route path="/student/payments" element={<StudentPaymentHistory />} />
       </Route>
 
       <Route element={<ProtectedRoute allowedRoles={['teacher']} />}>
         <Route path="/teacher" element={<TeacherHome />} />
+        <Route path="/teacher/timetable" element={<TeacherTimetable />} />
+        <Route path="/teacher/salary" element={<TeacherSalary />} />
       </Route>
 
       <Route element={<ProtectedRoute allowedRoles={['admin']} />}>

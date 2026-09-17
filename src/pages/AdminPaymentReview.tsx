@@ -13,6 +13,7 @@ import {
   reconcilePayment,
   type PaymentRow,
 } from '@/lib/paymentReview'
+import { PAYMENT_STATUS_TONE } from '@/components/paymentStatus'
 
 // C7 (list + full-size view) + C8 (approve/reject). Approve is one click —
 // it's the common, expected case for a correctly-submitted payment. Reject
@@ -20,12 +21,6 @@ import {
 // schema and no undo in this UI, so it's the action most worth a pause.
 type StatusFilter = 'all' | PaymentStatus
 type ActionState = 'idle' | 'confirmingReject' | 'submitting'
-
-const STATUS_TONE: Record<PaymentStatus, string> = {
-  pending: 'bg-due-bg text-due',
-  confirmed: 'bg-paid-bg text-paid',
-  rejected: 'bg-overdue-bg text-overdue',
-}
 
 export function AdminPaymentReview() {
   const { session } = useAuth()
@@ -191,7 +186,7 @@ export function AdminPaymentReview() {
                         statusFilter === key
                           ? key === 'all'
                             ? 'bg-primary text-primary-foreground'
-                            : STATUS_TONE[key as PaymentStatus]
+                            : PAYMENT_STATUS_TONE[key as PaymentStatus]
                           : 'bg-muted text-muted-foreground hover:bg-muted/70'
                       }`}
                     >
@@ -242,7 +237,7 @@ export function AdminPaymentReview() {
                             </div>
                           </div>
                           <span
-                            className={`inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_TONE[p.status]}`}
+                            className={`inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-xs font-medium ${PAYMENT_STATUS_TONE[p.status]}`}
                           >
                             {PAYMENT_STATUS_LABEL[p.status]}
                           </span>

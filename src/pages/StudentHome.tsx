@@ -7,59 +7,17 @@ import { STUDENT_NAV_ITEMS } from '@/lib/studentNav'
 import { Card, CardContent } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { AlertTriangle, CheckCircle, Clock, FileText } from '@/components/icons'
-import { currency, shortDate, score, num, FEE_STATUS_LABEL, type FeeStatus } from '@/lib/format'
+import { AlertTriangle, FileText } from '@/components/icons'
+import { FeeStatusPill, FEE_GRADIENT } from '@/components/feeStatus'
+import { currency, shortDate, score, num } from '@/lib/format'
 import { parseDateOnly } from '@/lib/fees'
+import { initials } from '@/lib/utils'
 import {
   fetchMyStudentInfo,
   fetchMyRecentMarks,
   fetchMyFeeHeadline,
   fetchMyTutorialSubjects,
 } from '@/lib/studentDashboard'
-
-// Gradient + icon per fee status, matching the tone the reference design
-// (reusable_design_export.zip) used for this exact hero card, adapted to
-// this repo's real design tokens rather than the export's own shadow/color
-// custom properties (which were never carried into this project's
-// index.css — only the ones AGENTS.md actually confirmed were).
-const FEE_GRADIENT: Record<FeeStatus, string> = {
-  paid: 'from-paid to-[#0f5c37]',
-  due: 'from-[#8a5606] to-[#6d4405]',
-  overdue: 'from-overdue to-[#8a271f]',
-}
-
-const FEE_ICON: Record<FeeStatus, typeof CheckCircle> = {
-  paid: CheckCircle,
-  due: Clock,
-  overdue: AlertTriangle,
-}
-
-const FEE_PILL_TONE: Record<FeeStatus, string> = {
-  paid: 'bg-paid-bg text-paid',
-  due: 'bg-due-bg text-due',
-  overdue: 'bg-overdue-bg text-overdue',
-}
-
-function FeeStatusPill({ status }: { status: FeeStatus }) {
-  const Icon = FEE_ICON[status]
-  return (
-    <span
-      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 h-7 text-xs font-bold ${FEE_PILL_TONE[status]}`}
-    >
-      <Icon width={14} height={14} />
-      {FEE_STATUS_LABEL[status]}
-    </span>
-  )
-}
-
-function initials(name: string): string {
-  return name
-    .trim()
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((w) => w[0])
-    .join('')
-}
 
 /** A query failing while there's genuinely no network isn't an error worth
  * alarming a family over — it's the exact "calm, expected" offline state
@@ -166,6 +124,12 @@ export function StudentHome() {
                 تاريخ الاستحقاق {shortDate(parseDateOnly(feeQuery.data.dueDate))}
                 {feeQuery.data.hasPendingPayment ? ' · بانتظار مراجعة الدفع' : ''}
               </p>
+              <Link
+                to="/student/fees"
+                className="inline-block mt-2 text-[13px] font-semibold text-white/90 hover:text-white hover:underline"
+              >
+                عرض كل الرسوم
+              </Link>
             </div>
           </Card>
         ) : (
@@ -232,13 +196,11 @@ export function StudentHome() {
           )}
         </Card>
 
-        {/* Tutorial papers — quick list, not yet tappable: the Tutorial
-            Papers screen itself (D3) doesn't exist as a route yet, so
-            these stay informational for now rather than linking anywhere. */}
+        {/* Tutorial papers — quick links, now that D3 exists to send them to. */}
         <Card className="p-0 overflow-hidden">
           <div className="px-4 pt-4 pb-1">
             <h3 className="font-display text-[17px] font-bold text-foreground">المذكّرات الدراسية</h3>
-            <p className="text-[13px] text-muted-foreground mt-1">حسب مواد صفّك الدراسي</p>
+            <p className="text-[13px] text-muted-foreground mt-1">اضغطي على مادة لعرض ملفاتها</p>
           </div>
           {infoQuery.isError ? (
             // Depends on the student's grade_level from infoQuery above —
@@ -270,12 +232,17 @@ export function StudentHome() {
           ) : papersQuery.data && papersQuery.data.length > 0 ? (
             <ul className="px-2 pb-2">
               {papersQuery.data.map((s) => (
-                <li key={s.subjectId} className="flex items-center gap-3 rounded-lg px-2 min-h-12 py-2">
-                  <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-secondary text-primary-soft shrink-0">
-                    <FileText width={18} height={18} />
-                  </span>
-                  <span className="flex-1 font-semibold truncate">{s.name}</span>
-                  <span className="text-xs text-muted-foreground shrink-0">{num(s.paperCount)} ملفات</span>
+                <li key={s.subjectId}>
+                  <Link
+                    to="/student/papers"
+                    className="flex items-center gap-3 rounded-lg px-2 min-h-12 py-2 hover:bg-muted transition-colors"
+                  >
+                    <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-secondary text-primary-soft shrink-0">
+                      <FileText width={18} height={18} />
+                    </span>
+                    <span className="flex-1 font-semibold truncate">{s.name}</span>
+                    <span className="text-xs text-muted-foreground shrink-0">{num(s.paperCount)} ملفات</span>
+                  </Link>
                 </li>
               ))}
             </ul>

@@ -9,22 +9,14 @@ import { AlertTriangle, Calendar } from '@/components/icons'
 import { fetchExistingStudents } from '@/lib/students'
 import { fetchExistingTeachers, type ExistingTeacher } from '@/lib/teachers'
 import { fetchSubjects, type Subject } from '@/lib/subjects'
-import { checkScheduleConflicts, createTimetableEntry, type ScheduleConflict } from '@/lib/timetables'
+import { checkScheduleConflicts, createTimetableEntry, DAY_OPTIONS, type ScheduleConflict } from '@/lib/timetables'
 
 // C13 — timetable entry. Every day 0-6 is offered (see timetables.ts for
 // why — Sudan's exact school-week convention turned out to be genuinely
 // disputed when checked, so this doesn't guess); listed starting Sunday,
 // matching both Date.getDay()'s storage convention and the Islamic
-// calendar's "Sunday is day one."
-const DAY_OPTIONS: { value: number; label: string }[] = [
-  { value: 0, label: 'الأحد' },
-  { value: 1, label: 'الاثنين' },
-  { value: 2, label: 'الثلاثاء' },
-  { value: 3, label: 'الأربعاء' },
-  { value: 4, label: 'الخميس' },
-  { value: 5, label: 'الجمعة' },
-  { value: 6, label: 'السبت' },
-]
+// calendar's "Sunday is day one." DAY_OPTIONS itself now lives in
+// timetables.ts, shared with the teacher-facing D7/D8 screens.
 
 export function AdminTimetableEntry() {
   const [teachers, setTeachers] = useState<ExistingTeacher[]>([])

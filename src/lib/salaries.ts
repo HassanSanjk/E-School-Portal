@@ -58,3 +58,43 @@ export async function createSalary(input: NewSalaryInput): Promise<number> {
   if (error) throw error
   return data.net_amount
 }
+
+// ============================================================
+// D7 (Dashboard) / D9 (Salary) — teacher's own read-only view.
+// ============================================================
+
+export interface SalaryRow {
+  id: string
+  month: string // yyyy-mm-01 — a bare `date` column, parse with
+  // parseDateOnly (fees.ts), never `new Date()` directly (same
+  // UTC-midnight trap as due_date).
+  baseAmount: number
+  deductions: number
+  netAmount: number
+  notes: string | null
+}
+
+/** Every salary row ever entered for this teacher, most recent month
+ * first. RLS ("teacher reads own salary", teacher_id = auth.uid())
+ * already scopes this. Used by both the Dashboard's latest-month card
+ * (D7, which just takes the first entry) and the full Salary screen (D9).
+ * There's no "paid" status anywhere in this schema (unlike fees/payments)
+ * — a salary row's existence *is* the record, so nothing here should ever
+ * imply a payment-confirmation concept the database doesn't have. */
+export async function fetchMySalaries(teacherId: string): Promise<SalaryRow[]> {
+  const { data, error } = await supabase
+    .from('salaries')
+    .select('id, month, base_amount, deductions, net_amount, notes')
+    .eq('teacher_id', teacherId)
+    .order('month', { ascending: false })
+  if (error) throw error
+
+  return (data ?? []).map((r) => ({
+    id: r.id,
+    month: r.month,
+    baseAmount: r.base_amount,
+    deductions: r.deductions,
+    netAmount: r.net_amount,
+    notes: r.notes,
+  }))
+}

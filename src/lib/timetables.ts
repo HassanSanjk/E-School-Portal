@@ -14,6 +14,18 @@
 // AdminTimetableEntry.tsx for the actual label mapping.
 import { supabase } from './supabase'
 
+/** Shared with AdminTimetableEntry.tsx (C13) so the label set can't drift
+ * between the admin entry form and the teacher-facing screens (D7/D8). */
+export const DAY_OPTIONS: { value: number; label: string }[] = [
+  { value: 0, label: 'الأحد' },
+  { value: 1, label: 'الاثنين' },
+  { value: 2, label: 'الثلاثاء' },
+  { value: 3, label: 'الأربعاء' },
+  { value: 4, label: 'الخميس' },
+  { value: 5, label: 'الجمعة' },
+  { value: 6, label: 'السبت' },
+]
+
 export interface NewTimetableEntry {
   teacherId: string
   subjectId: string
@@ -114,4 +126,46 @@ export async function createTimetableEntry(entry: NewTimetableEntry): Promise<vo
     room: entry.room || null,
   })
   if (error) throw error
+}
+
+// ============================================================
+// D7 (Dashboard) / D8 (Timetable) — teacher's own read-only view.
+// ============================================================
+
+export interface MyTimetableEntry {
+  id: string
+  dayOfWeek: number
+  period: number
+  subjectName: string
+  gradeLevel: string
+  classSection: string
+  room: string | null
+}
+
+/** Every period on this teacher's own weekly schedule. RLS ("teacher
+ * reads own timetable", teacher_id = auth.uid()) already scopes this —
+ * both the Dashboard's "today" card and the full Timetable screen filter/
+ * group this client-side rather than each running its own query, since
+ * one teacher's whole week is only a handful of rows. */
+export async function fetchMyTimetable(teacherId: string): Promise<MyTimetableEntry[]> {
+  const { data, error } = await supabase
+    .from('timetables')
+    .select('id, day_of_week, period, grade_level, class_section, room, subjects(name)')
+    .eq('teacher_id', teacherId)
+    .order('day_of_week', { ascending: true })
+    .order('period', { ascending: true })
+  if (error) throw error
+
+  return (data ?? []).map((r) => {
+    const subject = Array.isArray(r.subjects) ? r.subjects[0] : r.subjects
+    return {
+      id: r.id,
+      dayOfWeek: r.day_of_week,
+      period: r.period,
+      subjectName: subject?.name ?? '',
+      gradeLevel: r.grade_level,
+      classSection: r.class_section,
+      room: r.room,
+    }
+  })
 }

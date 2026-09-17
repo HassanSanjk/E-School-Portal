@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { Link, useLocation } from 'react-router'
 import { cn } from '@/lib/utils'
+import { SCHOOL_NAME_FULL } from '@/lib/constants'
 import { Logo } from './brand'
 import { ChevronEnd } from './icons'
 
@@ -73,7 +74,7 @@ export function BrandBand({
         <div className="flex items-center gap-3">
           <Logo size={36} />
           <p className="flex-1 min-w-0 text-xs text-white/65 truncate">
-            مدرسة ابن الجراح · الثانوية الخاصة بنات
+            {SCHOOL_NAME_FULL}
           </p>
         </div>
         <div className="mt-4 flex items-end justify-between gap-3">

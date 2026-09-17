@@ -12,3 +12,14 @@ export function cn(...inputs: ClassValue[]) {
 export function copyToClipboard(text: string): void {
   navigator.clipboard?.writeText(text).catch(() => {})
 }
+
+/** First two "words" of a full name, first letters only — used for the
+ * small avatar badge in dashboard headers (student and teacher alike). */
+export function initials(name: string): string {
+  return name
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((w) => w[0])
+    .join('')
+}

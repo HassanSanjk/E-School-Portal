@@ -126,40 +126,4 @@ export async function fetchMyFeeHeadline(studentId: string): Promise<MyFeeHeadli
   return [...rows].sort((a, b) => b.daysUntilDue - a.daysUntilDue)[0] ?? null
 }
 
-export interface TutorialSubjectSummary {
-  subjectId: string
-  name: string
-  paperCount: number
-}
-
-/** Subjects for the student's own grade level, each with its paper count.
- * `subjects` and `tutorial_papers` are both openly readable to any
- * authenticated user (schema_and_rls.sql — ordinary study material, not
- * restricted like fees/marks/salaries), so scoping to "her own subjects"
- * happens here client-side via grade_level, not through RLS. */
-export async function fetchMyTutorialSubjects(gradeLevel: string): Promise<TutorialSubjectSummary[]> {
-  const { data: subjects, error: subjectsError } = await supabase
-    .from('subjects')
-    .select('id, name')
-    .eq('grade_level', gradeLevel)
-  if (subjectsError) throw subjectsError
-  if (!subjects || subjects.length === 0) return []
-
-  const subjectIds = subjects.map((s) => s.id)
-  const { data: papers, error: papersError } = await supabase
-    .from('tutorial_papers')
-    .select('subject_id')
-    .in('subject_id', subjectIds)
-  if (papersError) throw papersError
-
-  const counts = new Map<string, number>()
-  for (const p of papers ?? []) {
-    counts.set(p.subject_id, (counts.get(p.subject_id) ?? 0) + 1)
-  }
-
-  return subjects.map((s) => ({
-    subjectId: s.id,
-    name: s.name,
-    paperCount: counts.get(s.id) ?? 0,
-  }))
-}
+export { fetchSubjectsWithPaperCounts as fetchMyTutorialSubjects } from './tutorialPapers'
