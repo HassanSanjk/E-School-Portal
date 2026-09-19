@@ -143,7 +143,7 @@ export function StudentHome() {
         {/* Recent marks */}
         <Card className="p-0 overflow-hidden">
           <div className="px-4 pt-4 pb-3 flex items-center justify-between">
-            <h3 className="font-display text-[17px] font-bold text-foreground">أحدث النتائج</h3>
+            <h2 className="font-display text-[17px] font-bold text-foreground">أحدث النتائج</h2>
             {marksQuery.data && marksQuery.data.length > 0 && (
               <Link to="/student/marks" className="text-sm font-semibold text-primary hover:underline">
                 عرض الكل
@@ -199,7 +199,7 @@ export function StudentHome() {
         {/* Tutorial papers — quick links, now that D3 exists to send them to. */}
         <Card className="p-0 overflow-hidden">
           <div className="px-4 pt-4 pb-1">
-            <h3 className="font-display text-[17px] font-bold text-foreground">المذكّرات الدراسية</h3>
+            <h2 className="font-display text-[17px] font-bold text-foreground">المذكّرات الدراسية</h2>
             <p className="text-[13px] text-muted-foreground mt-1">اضغطي على مادة لعرض ملفاتها</p>
           </div>
           {infoQuery.isError ? (

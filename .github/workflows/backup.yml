@@ -1,0 +1,42 @@
+name: Nightly Supabase backup
+
+on:
+  schedule:
+    # 02:00 UTC — outside Sudan's school hours (UTC+2) and outside any
+    # likely admin activity window.
+    - cron: '0 2 * * *'
+  workflow_dispatch: {} # lets you trigger one on demand, e.g. before a risky change
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install postgresql-client
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+
+      - name: Dump public schema
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          set -euo pipefail
+          if [ -z "${SUPABASE_DB_URL:-}" ]; then
+            echo "::error::SUPABASE_DB_URL secret is not set — see docs/BACKUPS.md"
+            exit 1
+          fi
+          mkdir -p backup
+          STAMP=$(date -u +%Y-%m-%d_%H%M%S)
+          FILE="backup/school-db-${STAMP}.sql.gz"
+          # --schema=public only: this is the school's actual academic/
+          # financial data (students, fees, marks, payments, etc.) — see
+          # docs/BACKUPS.md for why auth.users (login credentials) is
+          # deliberately not included here.
+          pg_dump "$SUPABASE_DB_URL" --no-owner --no-privileges --schema=public | gzip > "$FILE"
+          echo "backup_file=$FILE" >> "$GITHUB_OUTPUT"
+        id: dump
+
+      - name: Upload backup artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: supabase-backup-${{ github.run_id }}
+          path: ${{ steps.dump.outputs.backup_file }}
+          retention-days: 30

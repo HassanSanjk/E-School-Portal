@@ -1,5 +1,8 @@
 import { Routes, Route } from 'react-router'
+import { useEffect } from 'react'
 import { useAuth } from './hooks/useAuth'
+import { queryClient } from './lib/queryClient'
+import { processQueuedPayments } from './lib/paymentSubmission'
 import { ProtectedRoute, PublicOnlyRoute } from './routes/ProtectedRoute'
 import { RoleRedirect } from './routes/RoleRedirect'
 import { LoginPage } from './pages/LoginPage'
@@ -30,6 +33,23 @@ import { AdminSubjectsAndPapers } from './pages/AdminSubjectsAndPapers'
 
 function App() {
   const { isInitializing } = useAuth()
+
+  // E2 — replay any offline-queued payments once back online. Runs once
+  // on mount (covers reopening the app already online with jobs queued
+  // from a previous session) and again on every 'online' event.
+  useEffect(() => {
+    function refreshAfterReplay() {
+      queryClient.invalidateQueries({ queryKey: ['fees'] })
+      queryClient.invalidateQueries({ queryKey: ['feeHeadline'] })
+      queryClient.invalidateQueries({ queryKey: ['myPayments'] })
+    }
+    function handleOnline() {
+      processQueuedPayments(refreshAfterReplay)
+    }
+    if (navigator.onLine) handleOnline()
+    window.addEventListener('online', handleOnline)
+    return () => window.removeEventListener('online', handleOnline)
+  }, [])
 
   // While the very first session check resolves. Real branded splash now
   // that B5's built it — this used to be a plain-text placeholder.

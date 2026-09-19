@@ -9,10 +9,16 @@ import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { AlertTriangle, CheckCircle, Upload, Wallet } from '@/components/icons'
+import { AlertTriangle, CheckCircle, Clock, Upload, Wallet } from '@/components/icons'
 import { currency, shortDate } from '@/lib/format'
 import { fetchFeesWithStatus, parseDateOnly, type FeeRow } from '@/lib/fees'
-import { validatePaymentScreenshot, submitPayment } from '@/lib/paymentSubmission'
+import {
+  validatePaymentScreenshot,
+  compressImage,
+  uploadAndRecordPayment,
+  enqueuePayment,
+  queuedPaymentFeeIds,
+} from '@/lib/paymentSubmission'
 
 function loadFailureMessage(isOnline: boolean, onlineMessage: string): string {
   return isOnline
@@ -35,13 +41,21 @@ export function StudentSubmitPayment() {
     enabled: !!studentId,
   })
 
-  // Eligible to pay against: not already paid, and not already awaiting
-  // review — a rejected payment's fee still shows up here (hasPendingPayment
-  // only reflects a 'pending' row), so resubmitting after a rejection is
-  // naturally allowed.
+  const [queuedFeeIds, setQueuedFeeIds] = useState<Set<string>>(new Set())
+  useEffect(() => {
+    queuedPaymentFeeIds().then(setQueuedFeeIds)
+  }, [])
+
+  // Eligible to pay against: not already paid, not already awaiting review
+  // (a rejected payment's fee still shows up here — hasPendingPayment only
+  // reflects a 'pending' row, so resubmitting after a rejection is fine),
+  // and not already sitting in the local offline queue waiting to go out.
   const eligibleFees = useMemo(
-    () => (feesQuery.data ?? []).filter((f) => f.status !== 'paid' && !f.hasPendingPayment),
-    [feesQuery.data],
+    () =>
+      (feesQuery.data ?? []).filter(
+        (f) => f.status !== 'paid' && !f.hasPendingPayment && !queuedFeeIds.has(f.id),
+      ),
+    [feesQuery.data, queuedFeeIds],
   )
 
   const [selectedFeeId, setSelectedFeeId] = useState<string | null>(null)
@@ -74,6 +88,7 @@ export function StudentSubmitPayment() {
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
+  const [queuedLocally, setQueuedLocally] = useState(false)
 
   function handleFileChange(selected: File | null) {
     setSubmitError(null)
@@ -97,17 +112,27 @@ export function StudentSubmitPayment() {
     setIsSubmitting(true)
     setSubmitError(null)
     try {
-      await submitPayment(studentId, selectedFee.id, file)
-      await queryClient.invalidateQueries({ queryKey: ['fees', studentId] })
-      await queryClient.invalidateQueries({ queryKey: ['feeHeadline', studentId] })
-      setSubmitted(true)
+      const blob = await compressImage(file)
+      try {
+        await uploadAndRecordPayment(studentId, selectedFee.id, blob)
+        await queryClient.invalidateQueries({ queryKey: ['fees', studentId] })
+        await queryClient.invalidateQueries({ queryKey: ['feeHeadline', studentId] })
+        setSubmitted(true)
+      } catch (err) {
+        // Offline is the expected reason this fails — queue it locally
+        // instead of treating it as a real error; E2's whole point is that
+        // this doesn't just fail on a bad connection.
+        if (!isOnline) {
+          await enqueuePayment(studentId, selectedFee.id, blob)
+          setQueuedLocally(true)
+          setSubmitted(true)
+        } else {
+          throw err
+        }
+      }
     } catch (err) {
-      console.error('submitPayment failed', err)
-      setSubmitError(
-        isOnline
-          ? 'تعذّر إرسال الإيصال. حاولي مرة أخرى.'
-          : 'لا يوجد اتصال بالإنترنت حاليًا. الرجاء المحاولة مرة أخرى بعد عودة الاتصال.',
-      )
+      console.error('payment submission failed', err)
+      setSubmitError('تعذّر إرسال الإيصال. حاولي مرة أخرى.')
     } finally {
       setIsSubmitting(false)
     }
@@ -119,18 +144,26 @@ export function StudentSubmitPayment() {
         <AppBar title="دفع الرسوم" onBack={() => navigate('/student/fees')} />
         <main className="flex-1 p-4 max-w-xl w-full mx-auto flex items-center">
           <Card className="w-full p-6 flex flex-col items-center gap-3 text-center">
-            <span className="flex h-14 w-14 items-center justify-center rounded-full bg-paid-bg text-paid">
-              <CheckCircle width={28} height={28} />
+            <span
+              className={`flex h-14 w-14 items-center justify-center rounded-full ${
+                queuedLocally ? 'bg-due-bg text-due' : 'bg-paid-bg text-paid'
+              }`}
+            >
+              {queuedLocally ? <Clock width={28} height={28} /> : <CheckCircle width={28} height={28} />}
             </span>
-            <h2 className="font-display text-lg font-bold">تم إرسال الإيصال بنجاح</h2>
+            <h2 className="font-display text-lg font-bold">
+              {queuedLocally ? 'تم حفظ الإيصال، بانتظار الاتصال' : 'تم إرسال الإيصال بنجاح'}
+            </h2>
             <p className="text-sm text-muted-foreground">
-              سيتم مراجعته من قِبل الإدارة، ويمكنكِ متابعة حالته من صفحة الرسوم.
+              {queuedLocally
+                ? 'لا يوجد اتصال بالإنترنت حاليًا. تم حفظ الإيصال على جهازكِ وسيتم إرساله تلقائيًا فور عودة الاتصال.'
+                : 'سيتم مراجعته من قِبل الإدارة، ويمكنكِ متابعة حالته من صفحة الرسوم.'}
             </p>
             <div className="flex flex-col gap-2 w-full mt-2">
-              <Button onClick={() => navigate('/student/fees')} className="w-full h-11">
+              <Button size="lg" onClick={() => navigate('/student/fees')} className="w-full">
                 العودة إلى الرسوم
               </Button>
-              <Button variant="ghost" onClick={() => navigate('/student')} className="w-full h-11">
+              <Button size="lg" variant="ghost" onClick={() => navigate('/student')} className="w-full">
                 العودة إلى الرئيسية
               </Button>
             </div>
@@ -169,7 +202,7 @@ export function StudentSubmitPayment() {
         ) : (
           <>
             <div>
-              <h3 className="font-display text-[15px] font-bold text-foreground mb-2">اختاري الرسوم</h3>
+              <h2 className="font-display text-[15px] font-bold text-foreground mb-2">اختاري الرسوم</h2>
               <div className="space-y-2">
                 {eligibleFees.map((fee: FeeRow) => {
                   const isSelected = fee.id === selectedFeeId
@@ -202,7 +235,7 @@ export function StudentSubmitPayment() {
             </div>
 
             <Card className="p-4 space-y-3">
-              <h3 className="font-display text-[15px] font-bold text-foreground">صورة إيصال الدفع</h3>
+              <h2 className="font-display text-[15px] font-bold text-foreground">صورة إيصال الدفع</h2>
 
               <input
                 ref={fileInputRef}
@@ -249,7 +282,7 @@ export function StudentSubmitPayment() {
               </Alert>
             )}
 
-            <Button onClick={handleSubmit} disabled={!selectedFee || !file || isSubmitting} className="w-full h-11">
+            <Button size="lg" onClick={handleSubmit} disabled={!selectedFee || !file || isSubmitting} className="w-full">
               {isSubmitting ? '...جارٍ الإرسال' : 'إرسال الإيصال'}
             </Button>
           </>

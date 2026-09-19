@@ -6,6 +6,7 @@
 // screen, see schema_and_rls.sql) checks the first path segment against.
 // Get this wrong and every upload fails RLS, not silently succeeds wrong.
 import { supabase } from './supabase'
+import { enqueueJob, getQueuedJobs, processQueuedJobs } from './offlineQueue'
 
 const BUCKET = 'payment-screenshots'
 const MAX_RAW_BYTES = 15 * 1024 * 1024 // guard before compression even starts
@@ -43,15 +44,15 @@ export async function compressImage(file: File, maxDimension = 1600, quality = 0
   return blob
 }
 
-/** Upload first, then insert the payments row — same rollback principle
- * as uploadTutorialPaper (C15) and account creation (C3): if the row
- * insert fails, the just-uploaded file is removed so nothing orphaned is
- * left in Storage under her folder. */
-export async function submitPayment(studentId: string, feeId: string, file: File): Promise<void> {
-  const compressed = await compressImage(file)
+/** Upload + insert only — the network part of submitting a payment, split
+ * out from compression so a queued retry (E2) doesn't need to recompress,
+ * just replay this against the blob it already produced. Same rollback
+ * principle as uploadTutorialPaper: if the row insert fails, remove the
+ * just-uploaded file rather than leaving it orphaned. */
+export async function uploadAndRecordPayment(studentId: string, feeId: string, blob: Blob): Promise<void> {
   const path = `${studentId}/${crypto.randomUUID()}.jpg`
 
-  const { error: uploadError } = await supabase.storage.from(BUCKET).upload(path, compressed, {
+  const { error: uploadError } = await supabase.storage.from(BUCKET).upload(path, blob, {
     contentType: 'image/jpeg',
   })
   if (uploadError) throw uploadError
@@ -65,4 +66,38 @@ export async function submitPayment(studentId: string, feeId: string, file: File
     await supabase.storage.from(BUCKET).remove([path])
     throw insertError
   }
+}
+
+// ============================================================
+// E2 — offline write-queue for this flow (see offlineQueue.ts).
+// ============================================================
+
+const QUEUE_KIND = 'payment'
+
+interface QueuedPaymentPayload {
+  studentId: string
+  feeId: string
+  blob: Blob
+}
+
+export async function enqueuePayment(studentId: string, feeId: string, blob: Blob): Promise<void> {
+  await enqueueJob<QueuedPaymentPayload>(QUEUE_KIND, { studentId, feeId, blob })
+}
+
+/** Fee ids with a payment already sitting in the local queue — checked by
+ * StudentSubmitPayment so it doesn't offer the same fee twice while one
+ * submission is still waiting to go out. */
+export async function queuedPaymentFeeIds(): Promise<Set<string>> {
+  const jobs = await getQueuedJobs<QueuedPaymentPayload>(QUEUE_KIND)
+  return new Set(jobs.map((j) => j.payload.feeId))
+}
+
+/** Replays every queued payment in order, stopping at the first failure
+ * (almost always "still offline"). Call this on the 'online' event and
+ * once on app start if already online. */
+export async function processQueuedPayments(onEachSuccess?: () => void): Promise<void> {
+  await processQueuedJobs<QueuedPaymentPayload>(QUEUE_KIND, async (payload) => {
+    await uploadAndRecordPayment(payload.studentId, payload.feeId, payload.blob)
+    onEachSuccess?.()
+  })
 }

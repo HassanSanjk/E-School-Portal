@@ -111,9 +111,9 @@ export function TeacherHome() {
         {/* Today's timetable */}
         <Card className="p-0 overflow-hidden">
           <div className="px-4 pt-4 pb-3">
-            <h3 className="font-display text-[17px] font-bold text-foreground">
+            <h2 className="font-display text-[17px] font-bold text-foreground">
               حصص اليوم — {todayLabel}
-            </h3>
+            </h2>
           </div>
           {timetableQuery.isPending ? (
             <div className="px-4 pb-4 space-y-2">

@@ -108,7 +108,7 @@ export function StudentMarks() {
               bySubject.map((s) => (
                 <Card key={s.subjectName} className="p-0 overflow-hidden">
                   <div className="px-4 pt-4 pb-2">
-                    <h3 className="font-display text-[16px] font-bold text-foreground">{s.subjectName}</h3>
+                    <h2 className="font-display text-[16px] font-bold text-foreground">{s.subjectName}</h2>
                   </div>
                   {/* Deliberately no fixed number of rows here — a subject
                       can have 2 or 3 assessments in a given year, per
